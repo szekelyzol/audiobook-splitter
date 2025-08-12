@@ -304,11 +304,9 @@ echo "Your chapter files are ready!"`;
         
         {/* Intro */}
         <div className={styles.introbox}>
-          <strong>welcome!</strong> this tool helps you generate command line prompts to download and split audiofiles from youtube. for example, you can use it to download audiobooks and split the resulting file into multiple mp3 files, based on the chapter timestamps. 
-          
-          the tool only generates commands that you can use locally after installing the required tools. 
-          
-          open the sidebar for more details!
+          <p><strong>welcome!</strong> this tool helps you generate command line prompts to download and split audiofiles from youtube. for example, you can use it to download audiobooks and split the resulting file into multiple mp3 files, based on the chapter timestamps.</p>
+          <p>the tool only generates commands that you can use locally after installing the required tools.</p>
+          <p>open the sidebar for more details!</p>
         </div>
 
         <input 
@@ -407,20 +405,19 @@ echo "Your chapter files are ready!"`;
 
           {/* Formats */}
           <div className={styles.sidebarSection}>
-            <h3>supported formats</h3>
-            <p>• webvtt: 00:00:00 → 00:24:54</p>
-            <p>• simple: 0:00 chapter title</p>
-            <p>• numbered: 1. introduction</p>
+            <h3>supported timestamp formats</h3>
+            <p>• standard webvtt: 00:00:00 → 00:24:54</p>
+            <p>• simple format: 0:00 chapter title</p>
           </div>
 
           {/* Instructions */}
           <div className={styles.sidebarSection}>
             <h3>how to use</h3>
-            <p>1. install required tools</p>
+            <p>1. install required tools according to your OS. you should put both the yt-dlp and the ffmpeg executable files into the folder where you'll run the commands at the end.</p>
             <p>2. paste youtube url</p>
-            <p>3. paste timestamps</p>
-            <p>4. generate commands</p>
-            <p>5. run in terminal</p>
+            <p>3. write or paste timestamps. you can usually find these in the youtube video description or in the comment section.</p>
+            <p>4. click on generate to create the commands. the tool also offers to download batch files that help you automate the commands on your device. it's not a virus, but feel free to ignore it and just copy the commands.</p>
+            <p>5. run the resulting commands in a terminal, in the folder where both the yt-dlp and the ffmpeg executables are located.</p>
           </div>
 
           {/* Legal */}
