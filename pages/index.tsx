@@ -438,7 +438,7 @@ echo "Your chapter files are ready!"`;
           {/* Formats */}
           <div className={styles.sidebarSection}>
             <h3>supported timestamp formats</h3>
-            <p>• standard webvtt: 00:00:00 → 00:24:54</p>
+            <p>• standard webvtt: 00:00:00 --> 00:24:54</p>
             <p>• simple format: 0:00 chapter title</p>
           </div>
 
