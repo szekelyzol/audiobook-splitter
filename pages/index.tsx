@@ -393,14 +393,15 @@ echo "Your chapter files are ready!"`;
             <p><strong>1. install required tools according to your OS.</strong> you should put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into the folder where you will run the commands at the end</p>
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
-            <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download batch files that help you automate the commands on your device. it is not a virus, but feel free to ignore it and just copy the commands</p>
+            <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
             <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
+            <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
           </div>
 
           {/* OS Selection */}
           <div className={styles.sidebarSection}>
             <h3>operating system</h3>
-            <p>this only affects how paths are defined in the generated commands</p>
+            <p>this affects the format of the batch / shell script, and how paths are defined in the generated commands. i know, i could automate this. meh</p>
             <label>
               <input
                 type="radio"
