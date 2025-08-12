@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 
 export default function DownloadPage() {
   return (
@@ -13,9 +14,9 @@ export default function DownloadPage() {
         <p>Coming soon - setup instructions for the audiobook splitter tools.</p>
         
         <div style={{ marginTop: '40px' }}>
-          <a href="/" style={{ color: '#007bff', textDecoration: 'none' }}>
+          <Link href="/" style={{ color: '#007bff', textDecoration: 'none' }}>
             ← Back to Main Tool
-          </a>
+          </Link>
         </div>
       </div>
     </>
