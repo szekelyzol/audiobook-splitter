@@ -358,6 +358,30 @@ echo "Your chapter files are ready!"`;
           <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
         )}
 
+        {/* OS Selection */}
+        <div className={styles.sidebarSection}>
+          <h3>operating system</h3>
+          <p>this affects the format of the batch / shell script, and how paths are defined in the generated commands. i know, i could automate this. meh</p>
+          <label>
+            <input
+              type="radio"
+              value="windows"
+              checked={selectedOS === 'windows'}
+              onChange={(e) => setSelectedOS(e.target.value as OSType)}
+            />
+            windows
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="macos"
+              checked={selectedOS === 'macos'}
+              onChange={(e) => setSelectedOS(e.target.value as OSType)}
+            />
+            macos/linux
+          </label>
+        </div>
+
         <button 
           onClick={generateCommands}
           disabled={!sourceUrl || !isValidYouTubeUrl(sourceUrl)}
@@ -400,30 +424,6 @@ echo "Your chapter files are ready!"`;
             <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
             <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
-          </div>
-
-          {/* OS Selection */}
-          <div className={styles.sidebarSection}>
-            <h3>operating system</h3>
-            <p>this affects the format of the batch / shell script, and how paths are defined in the generated commands. i know, i could automate this. meh</p>
-            <label>
-              <input
-                type="radio"
-                value="windows"
-                checked={selectedOS === 'windows'}
-                onChange={(e) => setSelectedOS(e.target.value as OSType)}
-              />
-              windows
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="macos"
-                checked={selectedOS === 'macos'}
-                onChange={(e) => setSelectedOS(e.target.value as OSType)}
-              />
-              macos/linux
-            </label>
           </div>
 
           {/* Requirements */}
