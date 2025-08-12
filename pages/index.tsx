@@ -385,12 +385,16 @@ echo "Your chapter files are ready!"`;
       <div className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarContent}>
           <h2>info</h2>
-          <p>i created this tool to make life easier for parents who have kids that finish audiobooks at an unreasonable pace, and whose kids have a Yoto or similar device that plays mp3 files. it makes downloading and splitting audiobooks from youtube into separate chapters quick and easy.</p>
+          <p>i created this tool to make life easier for parents who have kids that finish audiobooks at an unreasonable pace, and whose kids have a Yoto or similar device that plays mp3 files. it makes downloading and splitting audiobooks from youtube into separate chapters quick and easy</p>
 
           {/* Instructions */}
           <div className={styles.sidebarSection}>
             <h3>how to use</h3>
-            <p><strong>1. install required tools according to your OS.</strong> you should put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into the folder where you will run the commands at the end</p>
+            <p><strong>1. install required tools according to your OS.</strong></p>
+            <div className={styles.disclaimer}>
+            <p>you need to put all tools into the same folder for the commands to work!</p>
+            <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook</code>. when you get to step 5, run the commands from within the same folder</p>
+            </div> 
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
             <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
@@ -436,7 +440,8 @@ echo "Your chapter files are ready!"`;
             <div className={styles.disclaimer}>
             <p>finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
             <p>for macos, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
-            <p>X.Y.Z. is going to be a version number.</p>
+            <p>X.Y.Z. is going to be a version number</p>
+            <p>for linux, you definitely do not need help</p>
             </div>
           </div>
 
