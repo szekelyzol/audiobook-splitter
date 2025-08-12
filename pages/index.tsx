@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import Head from 'next/head';
 
-// This MUST be the default export
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
 
   return (
     <>
@@ -33,7 +31,7 @@ export default function Home() {
           <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', marginTop: '20px' }}>
             <h3>Generated Download Command:</h3>
             <code style={{ background: '#000', color: '#fff', padding: '10px', display: 'block', borderRadius: '4px' }}>
-              yt-dlp -x --audio-format mp3 -o "%(title)s.%(ext)s" "{sourceUrl}"
+              {`yt-dlp -x --audio-format mp3 -o "%(title)s.%(ext)s" "${sourceUrl}"`}
             </code>
           </div>
         )}
