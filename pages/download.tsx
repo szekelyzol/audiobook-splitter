@@ -1,17 +1,9 @@
-import Head from 'next/head';
-import Link from 'next/link';
-
-export default function DownloadPage() {
-  return (
-    <>
-      <Head>
-        <title>Download - Audiobook Splitter</title>
-      </Head>
-      <div>
-        <h1>Download Page</h1>
-        <p>Setup instructions coming soon.</p>
-        <Link href="/">Back to Home</Link>
-      </div>
-    </>
+function DownloadPage() {
+  return React.createElement('div', null, 
+    React.createElement('h1', null, 'Download Page'),
+    React.createElement('p', null, 'Setup instructions coming soon.'),
+    React.createElement('a', { href: '/' }, 'Back to Home')
   );
 }
+
+export default DownloadPage;
