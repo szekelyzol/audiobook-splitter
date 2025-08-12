@@ -623,7 +623,6 @@ echo "Your chapter files are ready!"`;
             <p>for macos, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
             <p>X.Y.Z. is going to be a version number</p>
             <p>for linux, you definitely do not need help</p>
-            </div>
           </div>
 
           {/* Formats */}
