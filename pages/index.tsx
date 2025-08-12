@@ -1,10 +1,19 @@
-import { useState } from 'react';
+<button 
+                  onClick={generateCommands}
+                  disabled={!sourceUrl || parseResult.chapters.length === 0 || parseResult.errors.length > 0}
+                  import { useState } from 'react';
 import Head from 'next/head';
 
 interface Chapter {
   start: string;
   end: string;
   title: string;
+}
+
+interface ParseResult {
+  chapters: Chapter[];
+  errors: string[];
+  warnings: string[];
 }
 
 type OSType = 'windows' | 'macos';
@@ -14,6 +23,61 @@ export default function Home() {
   const [timestampInput, setTimestampInput] = useState('');
   const [selectedOS, setSelectedOS] = useState<OSType>('windows');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
+  const [parseResult, setParseResult] = useState<ParseResult>({ chapters: [], errors: [], warnings: [] });
+  const [showSetupCommands, setShowSetupCommands] = useState(false);
+
+  // Setup command templates
+  const windowsSetupCommands = `# Windows PowerShell Setup Commands (Run as Administrator)
+# Create tools directory
+$toolsDir = "$env:USERPROFILE\\AudiobookTools"
+New-Item -ItemType Directory -Force -Path $toolsDir
+Set-Location $toolsDir
+
+# Download yt-dlp
+Write-Host "Downloading yt-dlp..." -ForegroundColor Green
+Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "yt-dlp.exe"
+
+# Download FFmpeg
+Write-Host "Downloading FFmpeg..." -ForegroundColor Green
+Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile "ffmpeg.zip"
+Expand-Archive -Path "ffmpeg.zip" -DestinationPath "." -Force
+Move-Item "ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe" .
+Remove-Item "ffmpeg.zip", "ffmpeg-master-latest-win64-gpl" -Recurse -Force
+
+Write-Host "Setup complete! Tools are ready in: $toolsDir" -ForegroundColor Green
+Write-Host "Test with: .\\yt-dlp --version and .\\ffmpeg -version" -ForegroundColor Yellow`;
+
+  const macosSetupCommands = `# macOS/Linux Terminal Setup Commands
+# Create tools directory
+TOOLS_DIR="$HOME/AudiobookTools"
+mkdir -p "$TOOLS_DIR"
+cd "$TOOLS_DIR"
+
+# Download yt-dlp
+echo "Downloading yt-dlp..."
+curl -L -o yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+chmod +x yt-dlp
+
+# Check if FFmpeg is already installed
+if command -v ffmpeg >/dev/null 2>&1; then
+    echo "FFmpeg is already installed system-wide"
+    ln -sf "$(which ffmpeg)" ./ffmpeg
+else
+    echo "Downloading FFmpeg..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        curl -L -o ffmpeg.zip "https://evermeet.cx/ffmpeg/ffmpeg-6.0.zip"
+        unzip -q ffmpeg.zip && rm ffmpeg.zip
+    else
+        # Linux
+        curl -L -o ffmpeg.tar.xz "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+        tar -xf ffmpeg.tar.xz --strip-components=1 && rm ffmpeg.tar.xz
+    fi
+    chmod +x ffmpeg
+fi
+
+echo "Setup complete! Tools are ready in: $TOOLS_DIR"
+echo "Test with: ./yt-dlp --version and ./ffmpeg -version"`;
 
   // Sample timestamp text for placeholder
   const sampleTimestamps = `WEBVTT
@@ -27,74 +91,12 @@ Chapter 2: Getting Started
 00:51:46 --> 
 Chapter 3: Advanced Topics`;
 
-  const parseTimestamps = (input: string): Chapter[] => {
-    if (!input.trim()) return [];
+  const isValidTimestamp = (timestamp: string): boolean => {
+    if (!timestamp) return false;
     
-    const lines = input.split('\n').map(line => line.trim()).filter(line => line !== '');
-    const chapters: Chapter[] = [];
-
-    // Remove WEBVTT header if present
-    let startIndex = 0;
-    if (lines[0] && lines[0].toUpperCase() === 'WEBVTT') {
-      startIndex = 1;
-    }
-
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // WebVTT format: 00:00:00 --> 00:24:54
-      if (line.includes('-->')) {
-        const [start, end = ''] = line.split('-->').map(part => part.trim());
-        const title = lines[i + 1]?.trim() || `Chapter ${chapters.length + 1}`;
-        
-        chapters.push({
-          start: normalizeTimestamp(start),
-          end: normalizeTimestamp(end),
-          title: sanitizeTitle(title)
-        });
-        i++; // Skip title line
-      }
-      // Simple format: Chapter 1 - 0:00 or 0:00 Title or Chapter 1: Title
-      else if (line.match(/(\d+:[\d:]+)|(\d+\.\s)|(\d+:\s)|(Chapter\s+\d+)/i)) {
-        const timeMatch = line.match(/(\d+:[\d:]+)/);
-        let title = '';
-        let start = '';
-        
-        if (timeMatch) {
-          start = normalizeTimestamp(timeMatch[1]);
-          title = line.replace(timeMatch[0], '').replace(/[-–—]/g, '').trim();
-        } else {
-          // Handle "Chapter 1: Title" without explicit time
-          const chapterMatch = line.match(/Chapter\s+(\d+)/i);
-          if (chapterMatch) {
-            title = line;
-            start = '00:00:00'; // Default start time, will be overridden
-          }
-        }
-        
-        if (start && title) {
-          chapters.push({
-            start,
-            end: '',
-            title: sanitizeTitle(title)
-          });
-        }
-      }
-    }
-
-    // Fill in end times and handle edge cases
-    for (let i = 0; i < chapters.length - 1; i++) {
-      if (!chapters[i].end) {
-        chapters[i].end = chapters[i + 1].start;
-      }
-    }
-
-    // Handle last chapter - if it has no end time, it goes to the end
-    if (chapters.length > 0 && !chapters[chapters.length - 1].end) {
-      // Last chapter goes to END - we'll omit the -to parameter in ffmpeg
-    }
-
-    return chapters;
+    // Valid formats: HH:MM:SS, MM:SS, H:MM:SS, M:SS
+    const timeRegex = /^(\d{1,2}):([0-5]\d):([0-5]\d)$|^(\d{1,2}):([0-5]\d)$/;
+    return timeRegex.test(timestamp.trim());
   };
 
   const normalizeTimestamp = (timestamp: string): string => {
@@ -106,9 +108,26 @@ Chapter 3: Advanced Topics`;
     
     if (parts.length === 2) {
       // MM:SS format, add hours
+      const minutes = parseInt(parts[0]);
+      const seconds = parseInt(parts[1]);
+      
+      // Validate ranges
+      if (minutes < 0 || seconds < 0 || seconds >= 60) {
+        return cleaned; // Return as-is for error reporting
+      }
+      
       return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
     } else if (parts.length === 3) {
       // HH:MM:SS format
+      const hours = parseInt(parts[0]);
+      const minutes = parseInt(parts[1]);
+      const seconds = parseInt(parts[2]);
+      
+      // Validate ranges
+      if (hours < 0 || minutes < 0 || seconds < 0 || minutes >= 60 || seconds >= 60) {
+        return cleaned; // Return as-is for error reporting
+      }
+      
       return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
     }
     
@@ -139,8 +158,147 @@ Chapter 3: Advanced Topics`;
       || 'Untitled_Chapter';
   };
 
+  const parseTimestampsWithValidation = (input: string): ParseResult => {
+    if (!input.trim()) {
+      return { chapters: [], errors: ['No input provided'], warnings: [] };
+    }
+    
+    const lines = input.split('\n').map(line => line.trim()).filter(line => line !== '');
+    const chapters: Chapter[] = [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Check for WEBVTT header
+    let startIndex = 0;
+    if (lines[0] && lines[0].toUpperCase() === 'WEBVTT') {
+      startIndex = 1;
+    } else {
+      warnings.push('Missing WEBVTT header - assuming informal timestamp format');
+    }
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i];
+      const lineNumber = i + 1;
+      
+      // WebVTT format: 00:00:00 --> 00:24:54
+      if (line.includes('-->')) {
+        const [start, end = ''] = line.split('-->').map(part => part.trim());
+        
+        // Validate start timestamp
+        if (!start) {
+          errors.push(`Line ${lineNumber}: Missing start timestamp`);
+          continue;
+        }
+        
+        const normalizedStart = normalizeTimestamp(start);
+        if (!isValidTimestamp(normalizedStart)) {
+          errors.push(`Line ${lineNumber}: Invalid start timestamp format "${start}"`);
+          continue;
+        }
+        
+        // Validate end timestamp (if provided)
+        let normalizedEnd = '';
+        if (end && end.toUpperCase() !== 'END') {
+          normalizedEnd = normalizeTimestamp(end);
+          if (!isValidTimestamp(normalizedEnd)) {
+            errors.push(`Line ${lineNumber}: Invalid end timestamp format "${end}"`);
+            continue;
+          }
+          
+          // Check if end time is after start time
+          if (normalizedEnd && normalizedStart >= normalizedEnd) {
+            warnings.push(`Line ${lineNumber}: End time (${end}) should be after start time (${start})`);
+          }
+        }
+        
+        // Get title from next line
+        const title = lines[i + 1]?.trim() || `Chapter ${chapters.length + 1}`;
+        if (!lines[i + 1]?.trim()) {
+          warnings.push(`Line ${lineNumber + 1}: Missing chapter title, using default`);
+        }
+        
+        chapters.push({
+          start: normalizedStart,
+          end: normalizedEnd,
+          title: sanitizeTitle(title)
+        });
+        i++; // Skip title line
+      }
+      // Simple format: Chapter 1 - 0:00 or 0:00 Title or Chapter 1: Title
+      else if (line.match(/(\d+:[\d:]+)|(\d+\.\s)|(\d+:\s)|(Chapter\s+\d+)/i)) {
+        const timeMatch = line.match(/(\d+:[\d:]+)/);
+        let title = '';
+        let start = '';
+        
+        if (timeMatch) {
+          start = normalizeTimestamp(timeMatch[1]);
+          if (!isValidTimestamp(start)) {
+            errors.push(`Line ${lineNumber}: Invalid timestamp format "${timeMatch[1]}"`);
+            continue;
+          }
+          title = line.replace(timeMatch[0], '').replace(/[-–—]/g, '').trim();
+        } else {
+          // Handle "Chapter 1: Title" without explicit time
+          const chapterMatch = line.match(/Chapter\s+(\d+)/i);
+          if (chapterMatch) {
+            title = line;
+            start = '00:00:00'; // Default start time
+            warnings.push(`Line ${lineNumber}: No timestamp found, using default start time`);
+          }
+        }
+        
+        if (start && title) {
+          chapters.push({
+            start,
+            end: '',
+            title: sanitizeTitle(title)
+          });
+        }
+      }
+      // Unrecognized format
+      else if (line.length > 0) {
+        warnings.push(`Line ${lineNumber}: Unrecognized format "${line.substring(0, 30)}${line.length > 30 ? '...' : ''}"`);
+      }
+    }
+
+    // Fill in end times and validate chapter sequence
+    for (let i = 0; i < chapters.length - 1; i++) {
+      if (!chapters[i].end) {
+        chapters[i].end = chapters[i + 1].start;
+      }
+      
+      // Check for overlapping chapters
+      if (chapters[i].end && chapters[i + 1].start < chapters[i].end) {
+        warnings.push(`Chapters ${i + 1} and ${i + 2}: Overlapping time ranges`);
+      }
+    }
+
+    // Check for duplicate chapter names
+    const titleCounts = new Map<string, number>();
+    chapters.forEach((chapter, index) => {
+      const count = titleCounts.get(chapter.title) || 0;
+      titleCounts.set(chapter.title, count + 1);
+      if (count > 0) {
+        warnings.push(`Chapter ${index + 1}: Duplicate title "${chapter.title}"`);
+      }
+    });
+
+    // Final validation
+    if (chapters.length === 0 && errors.length === 0) {
+      errors.push('No valid chapters found in input');
+    }
+
+    return { chapters, errors, warnings };
+  };
+
+  const handleTimestampChange = (value: string) => {
+    setTimestampInput(value);
+    const result = parseTimestampsWithValidation(value);
+    setParseResult(result);
+  };
+
   const generateCommands = () => {
-    const parsedChapters = parseTimestamps(timestampInput);
+    const { chapters: parsedChapters } = parseResult;
     
     if (parsedChapters.length === 0 || !sourceUrl) {
       return;
@@ -189,7 +347,7 @@ Chapter 3: Advanced Topics`;
   };
 
   const downloadBatchFile = () => {
-    const parsedChapters = parseTimestamps(timestampInput);
+    const { chapters: parsedChapters } = parseResult;
     
     let scriptContent = '';
     
@@ -266,8 +424,6 @@ echo "Your chapter files are ready!"`;
     alert('Commands copied to clipboard!');
   };
 
-  const parsedChapters = parseTimestamps(timestampInput);
-
   return (
     <>
       <Head>
@@ -330,49 +486,144 @@ echo "Your chapter files are ready!"`;
           </div>
 
           {/* Requirements Section */}
+          {/* Requirements Section with Copy-Paste Setup */}
           <div style={{
             background: '#ffffff',
             border: '1px solid #dee2e6',
             borderRadius: '6px',
             padding: '15px'
           }}>
-            <h4 style={{ marginTop: 0, color: '#333' }}>📋 Required Tools:</h4>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <div>
-                <strong>1. yt-dlp</strong> - Downloads audio from YouTube
-                <br />
-                <a 
-                  href="https://github.com/yt-dlp/yt-dlp/releases" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: '#007bff', fontSize: '14px' }}
+            <h4 style={{ marginTop: 0, color: '#333' }}>📋 Required Tools Setup:</h4>
+            
+            {/* Easy Setup Toggle */}
+            <div style={{
+              background: '#e8f5e8',
+              border: '1px solid #c3e6cb',
+              borderRadius: '6px',
+              padding: '15px',
+              marginBottom: '15px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <h5 style={{ margin: 0, color: '#155724' }}>🚀 Easy Setup Commands</h5>
+                <button
+                  onClick={() => setShowSetupCommands(!showSetupCommands)}
+                  style={{
+                    background: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
                 >
-                  → Download from GitHub
-                </a>
+                  {showSetupCommands ? '🔼 Hide' : '🔽 Show'} Setup Commands
+                </button>
               </div>
-              <div>
-                <strong>2. FFmpeg</strong> - Splits audio into chapters
-                <br />
-                <a 
-                  href="https://ffmpeg.org/download.html" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: '#007bff', fontSize: '14px' }}
-                >
-                  → Download from Official Site
-                </a>
-              </div>
-              {selectedOS === 'windows' && (
-                <div style={{ 
-                  background: '#fff3cd', 
-                  padding: '10px', 
-                  borderRadius: '4px', 
-                  fontSize: '14px',
-                  color: '#856404'
-                }}>
-                  <strong>Windows Note:</strong> Place yt-dlp.exe and ffmpeg.exe in the same folder where you&apos;ll run the commands.
+              
+              {showSetupCommands && (
+                <div>
+                  <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#155724' }}>
+                    Copy and paste these commands in your {selectedOS === 'windows' ? 'PowerShell' : 'Terminal'} to automatically install both tools:
+                  </p>
+                  
+                  <div style={{
+                    background: '#1a1a1a',
+                    color: '#f8f8f2',
+                    padding: '15px',
+                    borderRadius: '6px',
+                    fontFamily: 'Monaco, Menlo, monospace',
+                    fontSize: '13px',
+                    overflowX: 'auto',
+                    position: 'relative'
+                  }}>
+                    <button
+                      onClick={() => {
+                        const commands = selectedOS === 'windows' ? windowsSetupCommands : macosSetupCommands;
+                        navigator.clipboard.writeText(commands);
+                        alert('Setup commands copied to clipboard!');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      📋 Copy
+                    </button>
+                    
+                    <div style={{ marginTop: '25px' }}>
+                      {(selectedOS === 'windows' ? windowsSetupCommands : macosSetupCommands)
+                        .split('\n')
+                        .map((line, index) => (
+                          <div key={index} style={{ 
+                            margin: '2px 0',
+                            color: line.startsWith('#') || line.startsWith('echo') ? '#6272a4' : '#f8f8f2'
+                          }}>
+                            {line}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    background: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px',
+                    padding: '10px',
+                    marginTop: '10px',
+                    fontSize: '13px',
+                    color: '#856404'
+                  }}>
+                    <strong>💡 How to use:</strong>
+                    <ol style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                      <li>Click "Copy" above</li>
+                      <li>Open {selectedOS === 'windows' ? 'PowerShell (Run as Administrator)' : 'Terminal'}</li>
+                      <li>Paste and press Enter</li>
+                      <li>Wait for downloads to complete</li>
+                      <li>Tools will be ready in {selectedOS === 'windows' ? '%USERPROFILE%\\AudiobookTools' : '$HOME/AudiobookTools'}</li>
+                    </ol>
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Manual Setup Option */}
+            <div style={{ borderTop: '1px solid #dee2e6', paddingTop: '15px' }}>
+              <h5 style={{ marginTop: 0, color: '#333' }}>🔧 Manual Download Links</h5>
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <div>
+                  <strong>1. yt-dlp</strong> - Downloads audio from YouTube
+                  <br />
+                  <a 
+                    href="https://github.com/yt-dlp/yt-dlp/releases" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#007bff', fontSize: '14px' }}
+                  >
+                    → Download from GitHub
+                  </a>
+                </div>
+                <div>
+                  <strong>2. FFmpeg</strong> - Splits audio into chapters
+                  <br />
+                  <a 
+                    href="https://ffmpeg.org/download.html" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#007bff', fontSize: '14px' }}
+                  >
+                    → Download from Official Site
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -428,13 +679,13 @@ echo "Your chapter files are ready!"`;
               <textarea
                 id="timestamps"
                 value={timestampInput}
-                onChange={(e) => setTimestampInput(e.target.value)}
+                onChange={(e) => handleTimestampChange(e.target.value)}
                 placeholder={sampleTimestamps}
                 rows={8}
                 style={{
                   width: '100%',
                   padding: '12px',
-                  border: '2px solid #e1e5e9',
+                  border: `2px solid ${parseResult.errors.length > 0 ? '#dc3545' : '#e1e5e9'}`,
                   borderRadius: '8px',
                   fontSize: '14px',
                   fontFamily: 'Monaco, Menlo, monospace'
@@ -458,7 +709,42 @@ echo "Your chapter files are ready!"`;
               </ul>
             </div>
 
-            {parsedChapters.length > 0 && (
+            {/* Validation Results */}
+            {parseResult.errors.length > 0 && (
+              <div style={{
+                background: '#f8d7da',
+                border: '1px solid #f5c6cb',
+                borderRadius: '8px',
+                padding: '15px',
+                marginTop: '15px'
+              }}>
+                <strong>❌ Errors found:</strong>
+                <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                  {parseResult.errors.map((error, index) => (
+                    <li key={index} style={{ color: '#721c24' }}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {parseResult.warnings.length > 0 && (
+              <div style={{
+                background: '#fff3cd',
+                border: '1px solid #ffeaa7',
+                borderRadius: '8px',
+                padding: '15px',
+                marginTop: '15px'
+              }}>
+                <strong>⚠️ Warnings:</strong>
+                <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                  {parseResult.warnings.map((warning, index) => (
+                    <li key={index} style={{ color: '#856404' }}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {parseResult.chapters.length > 0 && parseResult.errors.length === 0 && (
               <div style={{
                 background: '#d4edda',
                 border: '1px solid #c3e6cb',
@@ -466,15 +752,15 @@ echo "Your chapter files are ready!"`;
                 padding: '15px',
                 marginTop: '15px'
               }}>
-                <strong>✅ Found {parsedChapters.length} {parsedChapters.length === 1 ? 'chapter' : 'chapters'}:</strong>
+                <strong>✅ Found {parseResult.chapters.length} {parseResult.chapters.length === 1 ? 'chapter' : 'chapters'}:</strong>
                 <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
-                  {parsedChapters.slice(0, 3).map((chapter, index) => (
+                  {parseResult.chapters.slice(0, 3).map((chapter, index) => (
                     <li key={index}>
                       {chapter.start} → {chapter.end || 'END'}: {chapter.title}
                     </li>
                   ))}
-                  {parsedChapters.length > 3 && (
-                    <li>... and {parsedChapters.length - 3} more chapters</li>
+                  {parseResult.chapters.length > 3 && (
+                    <li>... and {parseResult.chapters.length - 3} more chapters</li>
                   )}
                 </ul>
               </div>
