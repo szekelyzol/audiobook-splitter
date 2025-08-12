@@ -426,13 +426,14 @@ echo "Your chapter files are ready!"`;
           <div className={styles.sidebarSection}>
             <h3>required tools</h3>
             <p>1. yt-dlp - downloads audio</p>
-            <a href="https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#installation" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">
               → download yt-dlp executable
             </a>
             <p>2. ffmpeg - splits chapters</p>
             <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">
               → download ffmpeg executables
             </a>
+            <p>finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer">here.</a> look for <strong>ffmpeg-release-essentials.zip</strong>. for macos, check the stable release <a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer">here.</a> look for <strong>ffmpeg-X.Y.Z.zip</strong>, where X.Y.Z. is going to be a version number.</p>
           </div>
 
           {/* Formats */}
