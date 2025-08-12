@@ -72,38 +72,37 @@ Chapter 3: Advanced Topics`;
   };
 
   const generateCommands = () => {
-    const parsedChapters = parseTimestamps(timestampInput);
+  const parsedChapters = parseTimestamps(timestampInput);
+  
+  if (parsedChapters.length === 0 || !sourceUrl) {
+    return;
+  }
+
+  const commands = [];
+
+  // Step 1: Download command with fixed, predictable filename
+  commands.push('# Step 1: Download audio from source');
+  commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
+  commands.push('');
+
+  // Step 2: Split commands using the predictable filename
+  commands.push('# Step 2: Split audio into chapters');
+  commands.push('');
+
+  parsedChapters.forEach((chapter, index) => {
+    const paddedIndex = (index + 1).toString().padStart(2, '0');
+    let cmd = `ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
     
-    if (parsedChapters.length === 0 || !sourceUrl) {
-      return;
+    if (chapter.end) {
+      cmd += ` -to ${chapter.end}`;
     }
+    
+    cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
+    commands.push(cmd);
+  });
 
-    const commands = [];
-
-    // Step 1: Download command
-    commands.push('# Step 1: Download audio from source');
-    commands.push(`yt-dlp -x --audio-format mp3 -o "%(title)s.%(ext)s" "${sourceUrl}"`);
-    commands.push('');
-
-    // Step 2: Split commands
-    commands.push('# Step 2: Split audio into chapters');
-    commands.push('# Note: Replace "downloaded_file.mp3" with the actual filename from step 1');
-    commands.push('');
-
-    parsedChapters.forEach((chapter, index) => {
-      const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `ffmpeg -i "downloaded_file.mp3" -ss ${chapter.start}`;
-      
-      if (chapter.end) {
-        cmd += ` -to ${chapter.end}`;
-      }
-      
-      cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
-      commands.push(cmd);
-    });
-
-    setGeneratedCommands(commands);
-  };
+  setGeneratedCommands(commands);
+};
 
   const downloadCommands = () => {
     const content = generatedCommands.join('\n');
