@@ -385,7 +385,7 @@ echo "Your chapter files are ready!"`;
       <div className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarContent}>
           <h2>info</h2>
-          <p>i created this tool to make life easier for parents whose kids have a Yoto or similar device that plays mp3 files. it makes downloading and splitting audiobooks from youtube into separate chapters quick and easy.</p>
+          <p>i created this tool to make life easier for parents who have kids that finish audiobooks at an unreasonable pace, and whose kids have a Yoto or similar device that plays mp3 files. it makes downloading and splitting audiobooks from youtube into separate chapters quick and easy.</p>
 
           {/* Instructions */}
           <div className={styles.sidebarSection}>
@@ -447,9 +447,9 @@ echo "Your chapter files are ready!"`;
 
           {/* Legal */}
           <div className={styles.disclaimer}>
-            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device.</p>
-            <p>it is implemented as a simple command generator so i can keep it as a free, open source tool. using it does require some basic understanding of using terminals and installing stuff, but i am sure you will manage.</p>
-            <p>also, make sure that you only use it with content that is legally available for you to download... okay?</p>
+            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device</p>
+            <p>using it does require some basic understanding of using terminals and installing stuff, but i am sure you will manage</p>
+            <p>just make sure that you only use it with content that is legally available for you to download</p>
           </div>
         </div>
       </div>
