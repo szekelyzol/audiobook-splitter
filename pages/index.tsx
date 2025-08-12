@@ -395,7 +395,7 @@ echo "Your chapter files are ready!"`;
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
             <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download batch files that help you automate the commands on your device. it is not a virus, but feel free to ignore it and just copy the commands</p>
-            <p>5. run the resulting commands in a terminal. do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
+            <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
           </div>
 
           {/* OS Selection */}
@@ -447,7 +447,9 @@ echo "Your chapter files are ready!"`;
 
           {/* Legal */}
           <div className={styles.disclaimer}>
-            <strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device. make sure that you use it with content that is legally available for you to download... okay?
+            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device.</p>
+            <p>the reason why it is implemented as a simple command generator is that i want to keep this as a free, open source tool. using it does require some level of understanding how to use a terminal, but i am sure you will manage. have fun! </p>
+            <p>also, make sure that you only use it with content that is legally available for you to download... okay?</p>
           </div>
         </div>
       </div>
