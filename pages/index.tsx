@@ -356,7 +356,7 @@ echo "Your chapter files are ready!"`;
           <div className={styles.infoMessage}>ℹ no timestamps provided - will download as single mp3 file</div>
         )}
         {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length > 0 && (
-          <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapters</div>
+          <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
         )}
 
         <button 
