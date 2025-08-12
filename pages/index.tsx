@@ -593,13 +593,12 @@ echo "Your chapter files are ready!"`;
             <h3>how to use</h3>
             <p><strong>1. install required tools according to your OS.</strong></p>
             <div className={styles.disclaimer}>
-            <p>💡 <strong>new!</strong> use the "download tool setup" button after generating commands to get an automated installer script!</p>
             <p>you need to put all tools into the same folder for the commands to work!</p>
             <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook</code>. when you get to step 5, run the commands from within the same folder</p>
             </div> 
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
-            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and mac/linux commands. use "download tool setup" to get an installer for yt-dlp and ffmpeg, and "download automated commands" to get the audiobook splitting script</p>
+            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and mac/linux commands. download and run the installer script to automatically set up yt-dlp and ffmpeg, then download and run the audiobook splitting script to grab the audio file and split it into individual tracks</p>
             <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
           </div>
