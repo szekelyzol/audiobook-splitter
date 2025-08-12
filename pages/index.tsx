@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import styles from '../styles/Home.module.css';
 
 interface Chapter {
   start: string;
@@ -175,19 +176,6 @@ Chapter 3: Advanced Topics`;
     setGeneratedCommands(commands);
   };
 
-  const downloadCommands = () => {
-    const content = generatedCommands.join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedOS === 'windows' ? 'audiobook-commands.bat' : 'audiobook-commands.sh';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
   const downloadBatchFile = () => {
     const parsedChapters = parseTimestamps(timestampInput);
     
@@ -276,100 +264,77 @@ echo "Your chapter files are ready!"`;
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-        <h1>🎧 Audiobook Command Generator</h1>
-        <p>Generate the exact CLI commands you need to split audiobooks into chapters</p>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>🎧 Audiobook Command Generator</h1>
+          <p>Generate the exact CLI commands you need to split audiobooks into chapters</p>
+        </div>
         
         {/* Legal Disclaimer */}
-        <div style={{ 
-          background: '#fff3cd', 
-          border: '1px solid #ffeaa7', 
-          borderRadius: '8px', 
-          padding: '15px', 
-          marginBottom: '30px', 
-          fontSize: '14px', 
-          color: '#856404' 
-        }}>
+        <div className={styles.disclaimer}>
           <strong>⚠️ Important:</strong> This tool generates commands for your local use. 
           Ensure you have proper rights to download and process any content. 
           This tool does not download or process any files - it only generates commands.
         </div>
 
         {/* OS Selector */}
-        <div style={{
-          background: '#e3f2fd',
-          border: '1px solid #bbdefb',
-          borderRadius: '8px',
-          padding: '20px',
-          marginBottom: '30px'
-        }}>
-          <h3 style={{ marginTop: 0, color: '#1565c0' }}>🖥️ Choose Your Operating System</h3>
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <div className={styles.osSelector}>
+          <h3>🖥️ Choose Your Operating System</h3>
+          <div className={styles.osOptions}>
+            <label className={styles.osOption}>
               <input
                 type="radio"
                 value="windows"
                 checked={selectedOS === 'windows'}
                 onChange={(e) => setSelectedOS(e.target.value as OSType)}
               />
-              <span style={{ fontWeight: selectedOS === 'windows' ? 'bold' : 'normal' }}>
+              <span className={`${styles.osOptionText} ${selectedOS === 'windows' ? styles.selected : ''}`}>
                 🪟 Windows (PowerShell/Command Prompt)
               </span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <label className={styles.osOption}>
               <input
                 type="radio"
                 value="macos"
                 checked={selectedOS === 'macos'}
                 onChange={(e) => setSelectedOS(e.target.value as OSType)}
               />
-              <span style={{ fontWeight: selectedOS === 'macos' ? 'bold' : 'normal' }}>
+              <span className={`${styles.osOptionText} ${selectedOS === 'macos' ? styles.selected : ''}`}>
                 🍎 macOS/Linux (Terminal)
               </span>
             </label>
           </div>
 
           {/* Requirements Section */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid #dee2e6',
-            borderRadius: '6px',
-            padding: '15px'
-          }}>
-            <h4 style={{ marginTop: 0, color: '#333' }}>📋 Required Tools:</h4>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <div>
+          <div className={styles.requirements}>
+            <h4>📋 Required Tools:</h4>
+            <div className={styles.requirementsList}>
+              <div className={styles.requirementItem}>
                 <strong>1. yt-dlp</strong> - Downloads audio from YouTube
                 <br />
                 <a 
                   href="https://github.com/yt-dlp/yt-dlp/releases" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  style={{ color: '#007bff', fontSize: '14px' }}
+                  className={styles.requirementLink}
                 >
                   → Download from GitHub
                 </a>
               </div>
-              <div>
+              <div className={styles.requirementItem}>
                 <strong>2. FFmpeg</strong> - Splits audio into chapters
                 <br />
                 <a 
                   href="https://ffmpeg.org/download.html" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  style={{ color: '#007bff', fontSize: '14px' }}
+                  className={styles.requirementLink}
                 >
                   → Download from Official Site
                 </a>
               </div>
               {selectedOS === 'windows' && (
-                <div style={{ 
-                  background: '#fff3cd', 
-                  padding: '10px', 
-                  borderRadius: '4px', 
-                  fontSize: '14px',
-                  color: '#856404'
-                }}>
+                <div className={styles.windowsNote}>
                   <strong>Windows Note:</strong> Place yt-dlp.exe and ffmpeg.exe in the same folder where you&apos;ll run the commands.
                 </div>
               )}
@@ -377,14 +342,14 @@ echo "Your chapter files are ready!"`;
           </div>
         </div>
 
-        {/* Main Form - Single Page */}
-        <div style={{ background: '#f8f9fa', borderRadius: '12px', padding: '30px', marginBottom: '30px' }}>
+        {/* Main Form */}
+        <div className={styles.mainForm}>
           
           {/* Source URL Input */}
-          <div style={{ marginBottom: '30px' }}>
-            <h2 style={{ marginTop: 0 }}>🔗 Source URL</h2>
-            <div style={{ margin: '20px 0' }}>
-              <label htmlFor="url" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+          <div className={styles.section}>
+            <h2>🔗 Source URL</h2>
+            <div className={styles.inputGroup}>
+              <label htmlFor="url" className={styles.label}>
                 YouTube URL:
               </label>
               <input 
@@ -393,36 +358,24 @@ echo "Your chapter files are ready!"`;
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
-                style={{ 
-                  width: '100%', 
-                  padding: '12px', 
-                  border: '2px solid #e1e5e9',
-                  borderRadius: '8px',
-                  fontSize: '14px'
-                }}
+                className={styles.input}
               />
             </div>
 
             {sourceUrl && (
-              <div style={{ 
-                background: '#d4edda', 
-                border: '1px solid #c3e6cb',
-                borderRadius: '8px', 
-                padding: '15px',
-                marginTop: '15px'
-              }}>
+              <div className={styles.successMessage}>
                 <strong>✅ URL looks good!</strong> Ready for download.
               </div>
             )}
           </div>
 
           {/* Timestamp Input */}
-          <div style={{ marginBottom: '30px' }}>
+          <div className={styles.section}>
             <h2>⏰ Chapter Timestamps</h2>
             <p>Paste your chapter timestamps. Supports multiple formats:</p>
 
-            <div style={{ margin: '20px 0' }}>
-              <label htmlFor="timestamps" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="timestamps" className={styles.label}>
                 Chapter Timestamps:
               </label>
               <textarea
@@ -431,26 +384,13 @@ echo "Your chapter files are ready!"`;
                 onChange={(e) => setTimestampInput(e.target.value)}
                 placeholder={sampleTimestamps}
                 rows={8}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e1e5e9',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontFamily: 'Monaco, Menlo, monospace'
-                }}
+                className={styles.textarea}
               />
             </div>
 
-            <div style={{
-              background: '#e3f2fd',
-              border: '1px solid #bbdefb',
-              borderRadius: '6px',
-              padding: '15px',
-              fontSize: '14px'
-            }}>
+            <div className={styles.infoBox}>
               <strong>💡 Supported formats:</strong>
-              <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+              <ul>
                 <li><strong>WebVTT:</strong> 00:00:00 --&gt; 00:24:54</li>
                 <li><strong>Simple:</strong> Chapter 1 - 0:00</li>
                 <li><strong>Basic:</strong> 0:00 Introduction</li>
@@ -459,15 +399,9 @@ echo "Your chapter files are ready!"`;
             </div>
 
             {parsedChapters.length > 0 && (
-              <div style={{
-                background: '#d4edda',
-                border: '1px solid #c3e6cb',
-                borderRadius: '8px',
-                padding: '15px',
-                marginTop: '15px'
-              }}>
+              <div className={styles.successMessage}>
                 <strong>✅ Found {parsedChapters.length} {parsedChapters.length === 1 ? 'chapter' : 'chapters'}:</strong>
-                <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                <ul className={styles.chaptersList}>
                   {parsedChapters.slice(0, 3).map((chapter, index) => (
                     <li key={index}>
                       {chapter.start} → {chapter.end || 'END'}: {chapter.title}
@@ -482,108 +416,52 @@ echo "Your chapter files are ready!"`;
           </div>
 
           {/* Generate Commands Section */}
-          <div>
+          <div className={styles.section}>
             <h2>🔧 Generate Commands</h2>
             
             {generatedCommands.length === 0 ? (
-              <div style={{ textAlign: 'center', margin: '30px 0' }}>
+              <div className={styles.generateSection}>
                 <button 
                   onClick={generateCommands}
                   disabled={!sourceUrl || parsedChapters.length === 0}
-                  style={{
-                    background: (!sourceUrl || parsedChapters.length === 0) ? '#6c757d' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    padding: '15px 30px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: (!sourceUrl || parsedChapters.length === 0) ? 'not-allowed' : 'pointer'
-                  }}
+                  className={styles.generateButton}
                 >
                   🚀 Generate {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands
                 </button>
               </div>
             ) : (
               <div>
-                <div style={{
-                  background: '#ffffff',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  margin: '20px 0'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>📋 {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands:</h3>
-                  <div style={{
-                    background: '#1a1a1a',
-                    color: '#f8f8f2',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    fontFamily: 'Monaco, Menlo, monospace',
-                    fontSize: '13px',
-                    overflowX: 'auto',
-                    margin: '15px 0',
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}>
+                <div className={styles.commandsContainer}>
+                  <h3>📋 {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands:</h3>
+                  <div className={styles.commandBlock}>
                     {generatedCommands.map((cmd, index) => (
                       <div 
                         key={index} 
-                        style={{
-                          color: cmd.startsWith('#') ? '#6272a4' : '#f8f8f2',
-                          fontStyle: cmd.startsWith('#') ? 'italic' : 'normal',
-                          margin: '4px 0'
-                        }}
+                        className={`${styles.commandLine} ${cmd.startsWith('#') ? styles.commandComment : styles.commandRegular}`}
                       >
                         {cmd}
                       </div>
                     ))}
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '20px' }}>
+                  <div className={styles.actionButtons}>
                     <button 
                       onClick={copyCommands}
-                      style={{
-                        background: '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
+                      className={`${styles.actionButton} ${styles.copyButton}`}
                     >
                       📋 Copy Commands
                     </button>
                     
                     <button 
                       onClick={downloadBatchFile}
-                      style={{
-                        background: '#17a2b8',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
+                      className={`${styles.actionButton} ${styles.downloadButton}`}
                     >
                       💾 Download {selectedOS === 'windows' ? '.bat' : '.sh'} Script
                     </button>
 
                     <button 
-                      onClick={() => {
-                        setGeneratedCommands([]);
-                      }}
-                      style={{
-                        background: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
+                      onClick={() => setGeneratedCommands([])}
+                      className={`${styles.actionButton} ${styles.resetButton}`}
                     >
                       🔄 Reset
                     </button>
@@ -591,24 +469,12 @@ echo "Your chapter files are ready!"`;
                 </div>
 
                 {/* Usage Instructions */}
-                <div style={{
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  marginTop: '20px'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>📚 How to Use:</h3>
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>
-                        Step 1 - {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'}:
-                      </h4>
-                      <p style={{ margin: 0 }}>
+                <div className={styles.instructions}>
+                  <h3>📚 How to Use:</h3>
+                  <div className={styles.instructionSteps}>
+                    <div className={styles.instructionStep}>
+                      <h4>Step 1 - {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'}:</h4>
+                      <p>
                         {selectedOS === 'windows' 
                           ? 'Open PowerShell or Command Prompt in the folder containing yt-dlp.exe and ffmpeg.exe'
                           : 'Open Terminal and navigate to your desired folder'
@@ -616,26 +482,16 @@ echo "Your chapter files are ready!"`;
                       </p>
                     </div>
                     
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 2:</h4>
-                      <p style={{ margin: 0 }}>
+                    <div className={styles.instructionStep}>
+                      <h4>Step 2:</h4>
+                      <p>
                         Run the commands above one by one, or download the script file and run it
                       </p>
                     </div>
                     
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 3:</h4>
-                      <p style={{ margin: 0 }}>
+                    <div className={styles.instructionStep}>
+                      <h4>Step 3:</h4>
+                      <p>
                         Your chapter files will be created with names like: 01_Introduction.mp3, 02_Getting_Started.mp3, etc.
                       </p>
                     </div>
@@ -646,14 +502,8 @@ echo "Your chapter files are ready!"`;
           </div>
         </div>
 
-        <footer style={{
-          textAlign: 'center',
-          padding: '20px 0',
-          color: '#666',
-          borderTop: '1px solid #e1e5e9',
-          marginTop: '40px'
-        }}>
-          <p style={{ margin: 0 }}>
+        <footer className={styles.footer}>
+          <p>
             This tool generates CLI commands only - no files are processed on our servers.
           </p>
         </footer>
