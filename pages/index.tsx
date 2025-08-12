@@ -426,12 +426,12 @@ echo "Your chapter files are ready!"`;
           <div className={styles.sidebarSection}>
             <h3>required tools</h3>
             <p>1. yt-dlp - downloads audio</p>
-            <a href="https://github.com/yt-dlp/yt-dlp/releases" target="_blank" rel="noopener noreferrer">
-              → download yt-dlp
+            <a href="https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#installation" target="_blank" rel="noopener noreferrer">
+              → download yt-dlp executable
             </a>
             <p>2. ffmpeg - splits chapters</p>
             <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">
-              → download ffmpeg
+              → download ffmpeg executables
             </a>
           </div>
 
