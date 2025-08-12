@@ -1,0 +1,9 @@
+{
+  "name": "Audiobook Splitter",
+  "short_name": "AudioSplit",
+  "description": "Generate CLI commands to split audiobooks into chapters",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007bff"
+}
