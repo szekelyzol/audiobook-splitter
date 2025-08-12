@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  
-  // Optimize for static export (optional)
-  output: 'standalone',
   
   // Environment variables
   env: {
