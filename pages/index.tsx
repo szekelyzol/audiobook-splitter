@@ -433,7 +433,9 @@ echo "Your chapter files are ready!"`;
             <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">
               → download ffmpeg executables
             </a>
-            <p>finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer">here.</a> look for <strong>ffmpeg-release-essentials.zip</strong>. for macos, check the stable release <a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer">here.</a> look for <strong>ffmpeg-X.Y.Z.zip</strong>, where X.Y.Z. is going to be a version number.</p>
+            <div className={styles.disclaimer}>
+            finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer">here</a>. look for <strong>ffmpeg-release-essentials.zip</strong>. for macos, check the stable release <a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer">here</a>. look for <strong>ffmpeg-X.Y.Z.zip</strong>, where X.Y.Z. is going to be a version number.
+            </div>
           </div>
 
           {/* Formats */}
