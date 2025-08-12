@@ -413,10 +413,10 @@ echo "Your chapter files are ready!"`;
           {/* Instructions */}
           <div className={styles.sidebarSection}>
             <h3>how to use</h3>
-            <p>1. install required tools according to your OS. you should put both the yt-dlp and the ffmpeg executable files into the folder where you'll run the commands at the end.</p>
+            <p>1. install required tools according to your OS. you should put both the yt-dlp and the ffmpeg executable files into the folder where you will run the commands at the end.</p>
             <p>2. paste youtube url</p>
             <p>3. write or paste timestamps. you can usually find these in the youtube video description or in the comment section.</p>
-            <p>4. click on generate to create the commands. the tool also offers to download batch files that help you automate the commands on your device. it's not a virus, but feel free to ignore it and just copy the commands.</p>
+            <p>4. click on generate to create the commands. the tool also offers to download batch files that help you automate the commands on your device. it is not a virus, but feel free to ignore it and just copy the commands.</p>
             <p>5. run the resulting commands in a terminal, in the folder where both the yt-dlp and the ffmpeg executables are located.</p>
           </div>
 
