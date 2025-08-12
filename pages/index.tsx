@@ -16,6 +16,21 @@ export default function Home() {
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const isValidYouTubeUrl = (url: string): boolean => {
+    if (!url) return false;
+    
+    const patterns = [
+      /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/,
+      /^https?:\/\/youtu\.be\/[\w-]+/,
+      /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/,
+      /^https?:\/\/m\.youtube\.com\/watch\?v=[\w-]+/,
+      /^https?:\/\/(www\.)?youtube-nocookie\.com\/embed\/[\w-]+/,
+      /^https?:\/\/(www\.)?youtube\.com\/v\/[\w-]+/
+    ];
+    
+    return patterns.some(pattern => pattern.test(url));
+  };
+
   const parseTimestamps = (input: string): Chapter[] => {
     if (!input.trim()) return [];
     
@@ -327,22 +342,25 @@ echo "Your chapter files are ready!"`;
         />
 
         {/* Error/Success Messages */}
+        {sourceUrl && !isValidYouTubeUrl(sourceUrl) && (
+          <div className={styles.errorMessage}>⚠ invalid youtube url format</div>
+        )}
         {!sourceUrl && timestampInput && (
           <div className={styles.errorMessage}>⚠ missing youtube url</div>
         )}
-        {sourceUrl && parsedChapters.length === 0 && timestampInput && (
+        {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length === 0 && timestampInput && (
           <div className={styles.errorMessage}>⚠ no valid timestamps found</div>
         )}
-        {sourceUrl && !timestampInput.trim() && (
+        {sourceUrl && isValidYouTubeUrl(sourceUrl) && !timestampInput.trim() && (
           <div className={styles.infoMessage}>ℹ no timestamps provided - will download as single mp3 file</div>
         )}
-        {sourceUrl && parsedChapters.length > 0 && (
+        {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length > 0 && (
           <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapters</div>
         )}
 
         <button 
           onClick={generateCommands}
-          disabled={!sourceUrl}
+          disabled={!sourceUrl || !isValidYouTubeUrl(sourceUrl)}
           className={styles.minimalButton}
         >
           generate
