@@ -391,11 +391,11 @@ echo "Your chapter files are ready!"`;
           {/* Instructions */}
           <div className={styles.sidebarSection}>
             <h3>how to use</h3>
-            <p>1. install required tools according to your OS. you should put both the `yt-dlp` and the `ffmpeg` executable files into the folder where you will run the commands at the end</p>
-            <p>2. paste youtube url. note that youtube shorts are not supported</p>
-            <p>3. write or paste timestamps. you can usually find these in the youtube video description or in the comment section</p>
-            <p>4. click on generate to create the commands. the tool also offers to download batch files that help you automate the commands on your device. it is not a virus, but feel free to ignore it and just copy the commands</p>
-            <p>5. run the resulting commands in a terminal, in the folder where both the yt-dlp and the ffmpeg executables are located</p>
+            <p><strong>1. install required tools according to your OS.</strong> you should put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into the folder where you will run the commands at the end</p>
+            <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
+            <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
+            <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download batch files that help you automate the commands on your device. it is not a virus, but feel free to ignore it and just copy the commands</p>
+            <p>5. run the resulting commands in a terminal. do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
           </div>
 
           {/* OS Selection */}
@@ -441,13 +441,13 @@ echo "Your chapter files are ready!"`;
             <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
             <p>• simple format: 0:00 chapter title</p>
             <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-              see the webvtt specs for more info
+              see the webvtt specs for more info and examples
             </a></p>
           </div>
 
           {/* Legal */}
           <div className={styles.disclaimer}>
-            <strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube, and does not run anything on your device. make sure that you use it with content that is legally available for you to download... okay?
+            <strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device. make sure that you use it with content that is legally available for you to download... okay?
           </div>
         </div>
       </div>
