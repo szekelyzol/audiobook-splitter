@@ -116,9 +116,21 @@ Chapter 3: Advanced Topics`;
   };
 
   const sanitizeTitle = (title: string): string => {
-    return title
+    if (!title || title.trim() === '') {
+      return 'Untitled_Chapter';
+    }
+    
+    let cleaned = title
       .replace(/^Chapter\s+\d+:?\s*/i, '') // Remove "Chapter X:" prefix
       .replace(/^\d+\.\s*/, '') // Remove "1. " prefix
+      .trim(); // Remove leading/trailing whitespace
+    
+    // If after cleaning we have nothing or just numbers, use the original title
+    if (!cleaned || /^\d+$/.test(cleaned)) {
+      cleaned = title.trim();
+    }
+    
+    return cleaned
       .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid filename chars
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .replace(/_{2,}/g, '_') // Replace multiple underscores with single
@@ -454,7 +466,7 @@ echo "Your chapter files are ready!"`;
                 padding: '15px',
                 marginTop: '15px'
               }}>
-                <strong>✅ Found {parsedChapters.length} chapters:</strong>
+                <strong>✅ Found {parsedChapters.length} {parsedChapters.length === 1 ? 'chapter' : 'chapters'}:</strong>
                 <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
                   {parsedChapters.slice(0, 3).map((chapter, index) => (
                     <li key={index}>
