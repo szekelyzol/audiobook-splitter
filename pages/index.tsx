@@ -304,13 +304,7 @@ echo "Your chapter files are ready!"`;
         
         {/* Intro */}
         <div className={styles.introbox}>
-          <p>
-            <strong>welcome!</strong> this tool helps you generate command line prompts to download and split audiofiles from youtube. for example, you can use it to download audiobooks and split the resulting file into multiple mp3 files, based on the chapter timestamps. 
-          </>
-          <p>
-            the tool only generates commands that you can use locally after installing the required tools. open the sidebar for more details.
-          </>
-           ensure you have rights to download content.
+          <strong>welcome!</strong> this tool helps you generate command line prompts to download and split audiofiles from youtube. for example, you can use it to download audiobooks and split the resulting file into multiple mp3 files, based on the chapter timestamps. the tool only generates commands that you can use locally after installing the required tools. open the sidebar for more details.
         </div>
 
         <input 
