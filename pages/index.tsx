@@ -192,6 +192,167 @@ export default function Home() {
     setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
   };
 
+  const downloadSetupScript = () => {
+    let scriptContent = '';
+    
+    if (selectedOS === 'windows') {
+      scriptContent = `@echo off
+echo ========================================
+echo     Audiobook Tools Setup - Windows
+echo ========================================
+echo.
+echo This script will download yt-dlp and ffmpeg for you.
+echo.
+pause
+
+echo.
+echo [1/3] Creating tools folder...
+if not exist "audiobook-tools" mkdir audiobook-tools
+cd audiobook-tools
+
+echo.
+echo [2/3] Downloading yt-dlp...
+curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o yt-dlp.exe
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: Failed to download yt-dlp!
+    echo Please download manually from: https://github.com/yt-dlp/yt-dlp/releases
+    pause
+    exit /b 1
+)
+
+echo.
+echo [3/3] Downloading ffmpeg...
+echo Please wait, this may take a few minutes...
+curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: Failed to download ffmpeg!
+    echo Please download manually from: https://www.gyan.dev/ffmpeg/builds/
+    pause
+    exit /b 1
+)
+
+echo.
+echo Extracting ffmpeg...
+tar -xf ffmpeg.zip --strip-components=1 --wildcards "*/bin/ffmpeg.exe"
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: Failed to extract ffmpeg!
+    echo Please extract manually and copy ffmpeg.exe to this folder
+    pause
+    exit /b 1
+)
+
+echo.
+echo Cleaning up...
+del ffmpeg.zip
+
+echo.
+echo ========================================
+echo     Setup Complete!
+echo ========================================
+echo.
+echo Your tools are ready in the 'audiobook-tools' folder.
+echo Copy your audiobook commands into this folder and run them!
+echo.
+pause`;
+    } else {
+      scriptContent = `#!/bin/bash
+
+echo "========================================"
+echo "    Audiobook Tools Setup - Mac/Linux"
+echo "========================================"
+echo
+echo "This script will help you install yt-dlp and ffmpeg."
+echo
+echo "Press Enter to continue..."
+read
+
+# Detect OS
+OS="$(uname -s)"
+
+echo
+echo "[1/2] Installing yt-dlp..."
+
+if command -v yt-dlp &> /dev/null; then
+    echo "yt-dlp is already installed!"
+else
+    if [ "$OS" = "Darwin" ]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            echo "Using Homebrew to install yt-dlp..."
+            brew install yt-dlp
+        else
+            echo "Installing via curl..."
+            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+            sudo chmod a+rx /usr/local/bin/yt-dlp
+        fi
+    else
+        # Linux
+        if command -v pip3 &> /dev/null; then
+            echo "Installing via pip..."
+            pip3 install --user yt-dlp
+        else
+            echo "Installing via curl..."
+            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+            sudo chmod a+rx /usr/local/bin/yt-dlp
+        fi
+    fi
+fi
+
+echo
+echo "[2/2] Installing ffmpeg..."
+
+if command -v ffmpeg &> /dev/null; then
+    echo "ffmpeg is already installed!"
+else
+    if [ "$OS" = "Darwin" ]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            echo "Using Homebrew to install ffmpeg..."
+            brew install ffmpeg
+        else
+            echo "Please install Homebrew first or download ffmpeg from:"
+            echo "https://evermeet.cx/ffmpeg/"
+            exit 1
+        fi
+    else
+        # Linux
+        if command -v apt-get &> /dev/null; then
+            echo "Using apt to install ffmpeg..."
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+        elif command -v yum &> /dev/null; then
+            echo "Using yum to install ffmpeg..."
+            sudo yum install -y ffmpeg
+        elif command -v pacman &> /dev/null; then
+            echo "Using pacman to install ffmpeg..."
+            sudo pacman -S ffmpeg
+        else
+            echo "Please install ffmpeg using your package manager"
+            exit 1
+        fi
+    fi
+fi
+
+echo
+echo "========================================"
+echo "    Setup Complete!"
+echo "========================================"
+echo
+echo "Both yt-dlp and ffmpeg are ready to use!"
+echo "You can now run the audiobook splitter commands."
+echo`;
+    }
+
+    const blob = new Blob([scriptContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const downloadBatchFile = () => {
     const parsedChapters = parseTimestamps(timestampInput);
     const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
@@ -408,11 +569,14 @@ echo "Your chapter files are ready!"`;
             </div>
             <pre>{(selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos).join('\n')}</pre>
             <div className={styles.minimalActions}>
-              <button onClick={copyCommands}>copy</button>
-              <button onClick={downloadBatchFile}>
-                download .{selectedOS === 'windows' ? 'bat' : 'sh'}
+              <button onClick={copyCommands} title="Copy commands to clipboard">copy</button>
+              <button onClick={downloadBatchFile} title="Download audiobook splitting script">
+                .{selectedOS === 'windows' ? 'bat' : 'sh'} script
               </button>
-              <button onClick={() => setGeneratedCommands({ windows: [], macos: [] })}>reset</button>
+              <button onClick={downloadSetupScript} title="Download tool installer script">
+                setup tools
+              </button>
+              <button onClick={() => setGeneratedCommands({ windows: [], macos: [] })} title="Clear everything">reset</button>
             </div>
           </div>
         )}
@@ -429,12 +593,13 @@ echo "Your chapter files are ready!"`;
             <h3>how to use</h3>
             <p><strong>1. install required tools according to your OS.</strong></p>
             <div className={styles.disclaimer}>
+            <p>💡 <strong>new!</strong> use the "download tool setup" button after generating commands to get an automated installer script!</p>
             <p>you need to put all tools into the same folder for the commands to work!</p>
             <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook</code>. when you get to step 5, run the commands from within the same folder</p>
             </div> 
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
-            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and macos/linux commands. the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
+            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and mac/linux commands. use "download tool setup" to get an installer for yt-dlp and ffmpeg, and "download automated commands" to get the audiobook splitting script</p>
             <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
           </div>
