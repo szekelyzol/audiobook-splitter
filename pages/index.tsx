@@ -320,9 +320,8 @@ echo "Your chapter files are ready!"`;
         {/* Intro */}
         <div className={styles.introbox}>
           <p><strong>welcome!</strong></p>
-          <p>this tool helps you generate command line prompts to download and split audiofiles from youtube.</p>
-          <p>for example, you can use it to download audiobooks and split the resulting file into multiple mp3 files, based on the chapter timestamps.</p>
-          <p>the tool generates commands that you can use locally after installing the required tools.</p>
+          <p>this tool helps you generate command line prompts.</p>
+          <p>use it to download audiobooks from youtube and split the resulting file into multiple mp3 files, based on the chapter timestamps.</p>
           <p>open the sidebar for more details!</p>
         </div>
 
@@ -448,7 +447,7 @@ echo "Your chapter files are ready!"`;
           {/* Legal */}
           <div className={styles.disclaimer}>
             <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device.</p>
-            <p>the reason why it is implemented as a simple command generator is that i want to keep this as a free, open source tool. using it does require some level of understanding how to use a terminal, but i am sure you will manage. have fun! </p>
+            <p>it is implemented as a simple command generator so i can keep it as a free, open source tool. using it does require some basic understanding of using terminals and installing stuff, but i am sure you will manage.</p>
             <p>also, make sure that you only use it with content that is legally available for you to download... okay?</p>
           </div>
         </div>
