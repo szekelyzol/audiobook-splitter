@@ -504,8 +504,8 @@ echo "Your chapter files are ready!"`;
         {/* Intro */}
         <div className={styles.introbox}>
           <p><strong>welcome!</strong></p>
-          <p>this tool helps you generate command line prompts.</p>
-          <p>use it to download audiobooks from youtube and split the resulting file into multiple mp3 files, based on the chapter timestamps.</p>
+          <p>this tool helps you download audio from youtube and split the resulting file into individual tracks, based on the timestamps</p>
+          <p>it offers a manual and an automated workflow: use the generated command line prompts, or use the script that runs the prompts for you</p>
           <p>open the sidebar for more details!</p>
         </div>
 
@@ -571,10 +571,10 @@ echo "Your chapter files are ready!"`;
             <div className={styles.minimalActions}>
               <button onClick={copyCommands} title="Copy commands to clipboard">copy</button>
               <button onClick={downloadBatchFile} title="Download audiobook splitting script">
-                .{selectedOS === 'windows' ? 'bat' : 'sh'} script
+                .{selectedOS === 'windows' ? 'bat' : 'sh'} audio splitting script
               </button>
               <button onClick={downloadSetupScript} title="Download tool installer script">
-                setup tools
+                tool setup script
               </button>
               <button onClick={() => setGeneratedCommands({ windows: [], macos: [] })} title="Clear everything">reset</button>
             </div>
@@ -586,21 +586,22 @@ echo "Your chapter files are ready!"`;
       <div className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarContent}>
           <h2>info</h2>
-          <p>i created this tool to make life easier for parents who have kids that finish audiobooks at an unreasonable pace, and whose kids have a Yoto or similar device that plays mp3 files. it makes downloading and splitting audiobooks from youtube into separate chapters quick and easy</p>
+          <p>i created this tool to download and split audiobooks from youtube into separate chapters</p>
+          <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+          <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files</p>
 
           {/* Instructions */}
           <div className={styles.sidebarSection}>
             <h3>how to use</h3>
-            <p><strong>1. install required tools according to your OS.</strong></p>
-            <div className={styles.disclaimer}>
-            <p>you need to put all tools into the same folder for the commands to work!</p>
-            <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook</code>. when you get to step 5, run the commands from within the same folder</p>
-            </div> 
-            <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
-            <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
-            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and mac/linux commands. download and run the installer script to automatically set up yt-dlp and ffmpeg, then download and run the audiobook splitting script to grab the audio file and split it into individual tracks</p>
-            <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
+            <p><strong>1. paste a youtube url.</strong> youtube shorts are not supported</p>
+            <p><strong>2. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
+            <p><strong>3. click on generate to create commands and scripts.</strong> you can toggle between windows and mac/linux outputs.</p>
+            <p><strong>4. make sure you have the correct tools set up to run the generated commands.</strong> you can download and run the installer script to automatically set up <code>yt-dlp</code> and <code>ffmpeg</code>, or you can manually set up your environment based on the <strong>required tools</strong> below.</p>
+            <p><strong>5. run the audio splitting commands.</strong> you can download and run the audiobook splitting script that does everything automatically, or you can run the resulting commands manually in a terminal.
+            the commands and the script work in the same way: grab the audio file from youtube with <code>yt-dlp</code> and split it into individual tracks using <code>ffmpeg</code></p>
+            <p>you must do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
+            
           </div>
 
           {/* Requirements */}
@@ -615,6 +616,9 @@ echo "Your chapter files are ready!"`;
               → download ffmpeg executables
             </a>
             <div className={styles.disclaimer}>
+            <p>if you decide to set up your environment manually, you need to put all tools into the same folder for the commands to work!</p>
+            <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook-tools</code>. when you get to step 5, navigate to the same folder in your terminal before running the commands</p>
+            </div> 
             <p>finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
             <p>for macos, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
             <p>X.Y.Z. is going to be a version number</p>
@@ -634,7 +638,7 @@ echo "Your chapter files are ready!"`;
 
           {/* Legal */}
           <div className={styles.disclaimer}>
-            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not download content from youtube for you, and does not run anything on your device</p>
+            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device</p>
             <p>using it does require some basic understanding of using terminals and installing stuff, but i am sure you will manage</p>
             <p>just make sure that you only use it with content that is legally available for you to download</p>
           </div>
