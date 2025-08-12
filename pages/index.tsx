@@ -438,8 +438,9 @@ echo "Your chapter files are ready!"`;
           {/* Formats */}
           <div className={styles.sidebarSection}>
             <h3>supported timestamp formats</h3>
-            <p>• standard webvtt: 00:00:00 --> 00:24:54</p>
+            <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
             <p>• simple format: 0:00 chapter title</p>
+            <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">see the webvtt specs for more info</p>
           </div>
 
           {/* Legal */}
