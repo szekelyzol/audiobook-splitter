@@ -348,6 +348,7 @@
 
 .generateButton {
   background: #007bff;
+  width: 100%;
   color: white;
   border: none;
   padding: 15px 30px;
