@@ -1,4 +1,7 @@
-import { useState } from 'react';
+<button 
+                  onClick={generateCommands}
+                  disabled={!sourceUrl || parseResult.chapters.length === 0 || parseResult.errors.length > 0}
+                  import { useState } from 'react';
 import Head from 'next/head';
 
 interface Chapter {
@@ -22,18 +25,6 @@ export default function Home() {
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [parseResult, setParseResult] = useState<ParseResult>({ chapters: [], errors: [], warnings: [] });
   const [showSetupCommands, setShowSetupCommands] = useState(false);
-
-  // Sample timestamp text for placeholder
-  const sampleTimestamps = `WEBVTT
-
-00:00:00 --> 00:24:54
-Chapter 1: Introduction
-
-00:24:54 --> 00:51:46
-Chapter 2: Getting Started
-
-00:51:46 --> 
-Chapter 3: Advanced Topics`;
 
   // Setup command templates
   const windowsSetupCommands = `# Windows PowerShell Setup Commands (Run as Administrator)
@@ -87,6 +78,18 @@ fi
 
 echo "Setup complete! Tools are ready in: $TOOLS_DIR"
 echo "Test with: ./yt-dlp --version and ./ffmpeg -version"`;
+
+  // Sample timestamp text for placeholder
+  const sampleTimestamps = `WEBVTT
+
+00:00:00 --> 00:24:54
+Chapter 1: Introduction
+
+00:24:54 --> 00:51:46
+Chapter 2: Getting Started
+
+00:51:46 --> 
+Chapter 3: Advanced Topics`;
 
   const isValidTimestamp = (timestamp: string): boolean => {
     if (!timestamp) return false;
@@ -330,6 +333,19 @@ echo "Test with: ./yt-dlp --version and ./ffmpeg -version"`;
     setGeneratedCommands(commands);
   };
 
+  const downloadCommands = () => {
+    const content = generatedCommands.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = selectedOS === 'windows' ? 'audiobook-commands.bat' : 'audiobook-commands.sh';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const downloadBatchFile = () => {
     const { chapters: parsedChapters } = parseResult;
     
@@ -444,7 +460,7 @@ echo "Your chapter files are ready!"`;
           marginBottom: '30px'
         }}>
           <h3 style={{ marginTop: 0, color: '#1565c0' }}>🖥️ Choose Your Operating System</h3>
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="radio"
@@ -469,6 +485,7 @@ echo "Your chapter files are ready!"`;
             </label>
           </div>
 
+          {/* Requirements Section */}
           {/* Requirements Section with Copy-Paste Setup */}
           <div style={{
             background: '#ffffff',
@@ -486,7 +503,7 @@ echo "Your chapter files are ready!"`;
               padding: '15px',
               marginBottom: '15px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <h5 style={{ margin: 0, color: '#155724' }}>🚀 Easy Setup Commands</h5>
                 <button
                   onClick={() => setShowSetupCommands(!showSetupCommands)}
@@ -548,7 +565,7 @@ echo "Your chapter files are ready!"`;
                         .map((line, index) => (
                           <div key={index} style={{ 
                             margin: '2px 0',
-                            color: line.startsWith('#') || line.startsWith('echo') || line.startsWith('Write-Host') ? '#6272a4' : '#f8f8f2'
+                            color: line.startsWith('#') || line.startsWith('echo') ? '#6272a4' : '#f8f8f2'
                           }}>
                             {line}
                           </div>
@@ -575,188 +592,7 @@ echo "Your chapter files are ready!"`;
                     </ol>
                   </div>
                 </div>
-            </div>
-
-          {/* Generate Commands Section */}
-          <div>
-            <h2>🔧 Generate Commands</h2>
-            
-            {generatedCommands.length === 0 ? (
-              <div style={{ textAlign: 'center', margin: '30px 0' }}>
-                <button 
-                  onClick={generateCommands}
-                  disabled={!sourceUrl || parseResult.chapters.length === 0 || parseResult.errors.length > 0}
-                  style={{
-                    background: (!sourceUrl || parseResult.chapters.length === 0 || parseResult.errors.length > 0) ? '#6c757d' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    padding: '15px 30px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: (!sourceUrl || parseResult.chapters.length === 0 || parseResult.errors.length > 0) ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  🚀 Generate {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{
-                  background: '#ffffff',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  margin: '20px 0'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>📋 {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands:</h3>
-                  <div style={{
-                    background: '#1a1a1a',
-                    color: '#f8f8f2',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    fontFamily: 'Monaco, Menlo, monospace',
-                    fontSize: '13px',
-                    overflowX: 'auto',
-                    margin: '15px 0',
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}>
-                    {generatedCommands.map((cmd, index) => (
-                      <div 
-                        key={index} 
-                        style={{
-                          color: cmd.startsWith('#') ? '#6272a4' : '#f8f8f2',
-                          fontStyle: cmd.startsWith('#') ? 'italic' : 'normal',
-                          margin: '4px 0'
-                        }}
-                      >
-                        {cmd}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '20px' }}>
-                    <button 
-                      onClick={copyCommands}
-                      style={{
-                        background: '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      📋 Copy Commands
-                    </button>
-                    
-                    <button 
-                      onClick={downloadBatchFile}
-                      style={{
-                        background: '#17a2b8',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      💾 Download {selectedOS === 'windows' ? '.bat' : '.sh'} Script
-                    </button>
-
-                    <button 
-                      onClick={() => {
-                        setGeneratedCommands([]);
-                      }}
-                      style={{
-                        background: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      🔄 Reset
-                    </button>
-                  </div>
-                </div>
-
-                {/* Usage Instructions */}
-                <div style={{
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  marginTop: '20px'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>📚 How to Use:</h3>
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>
-                        Step 1 - {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'}:
-                      </h4>
-                      <p style={{ margin: 0 }}>
-                        {selectedOS === 'windows' 
-                          ? 'Open PowerShell or Command Prompt in the folder containing yt-dlp.exe and ffmpeg.exe'
-                          : 'Open Terminal and navigate to your AudiobookTools folder'
-                        }
-                      </p>
-                    </div>
-                    
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 2:</h4>
-                      <p style={{ margin: 0 }}>
-                        Run the commands above one by one, or download the script file and run it
-                      </p>
-                    </div>
-                    
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      borderLeft: '4px solid #007bff'
-                    }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 3:</h4>
-                      <p style={{ margin: 0 }}>
-                        Your chapter files will be created with names like: 01_Introduction.mp3, 02_Getting_Started.mp3, etc.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <footer style={{
-          textAlign: 'center',
-          padding: '20px 0',
-          color: '#666',
-          borderTop: '1px solid #e1e5e9',
-          marginTop: '40px'
-        }}>
-          <p style={{ margin: 0 }}>
-            This tool generates CLI commands only - no files are processed on our servers.
-          </p>
-        </footer>
-      </div>
-    </>
-  );
-}
+              )}
             </div>
 
             {/* Manual Setup Option */}
@@ -929,3 +765,185 @@ echo "Your chapter files are ready!"`;
                 </ul>
               </div>
             )}
+          </div>
+
+          {/* Generate Commands Section */}
+          <div>
+            <h2>🔧 Generate Commands</h2>
+            
+            {generatedCommands.length === 0 ? (
+              <div style={{ textAlign: 'center', margin: '30px 0' }}>
+                <button 
+                  onClick={generateCommands}
+                  disabled={!sourceUrl || parsedChapters.length === 0}
+                  style={{
+                    background: (!sourceUrl || parsedChapters.length === 0) ? '#6c757d' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    padding: '15px 30px',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: (!sourceUrl || parsedChapters.length === 0) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  🚀 Generate {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  margin: '20px 0'
+                }}>
+                  <h3 style={{ marginTop: 0 }}>📋 {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'} Commands:</h3>
+                  <div style={{
+                    background: '#1a1a1a',
+                    color: '#f8f8f2',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    fontFamily: 'Monaco, Menlo, monospace',
+                    fontSize: '13px',
+                    overflowX: 'auto',
+                    margin: '15px 0',
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}>
+                    {generatedCommands.map((cmd, index) => (
+                      <div 
+                        key={index} 
+                        style={{
+                          color: cmd.startsWith('#') ? '#6272a4' : '#f8f8f2',
+                          fontStyle: cmd.startsWith('#') ? 'italic' : 'normal',
+                          margin: '4px 0'
+                        }}
+                      >
+                        {cmd}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '20px' }}>
+                    <button 
+                      onClick={copyCommands}
+                      style={{
+                        background: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      📋 Copy Commands
+                    </button>
+                    
+                    <button 
+                      onClick={downloadBatchFile}
+                      style={{
+                        background: '#17a2b8',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      💾 Download {selectedOS === 'windows' ? '.bat' : '.sh'} Script
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setGeneratedCommands([]);
+                      }}
+                      style={{
+                        background: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      🔄 Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* Usage Instructions */}
+                <div style={{
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  marginTop: '20px'
+                }}>
+                  <h3 style={{ marginTop: 0 }}>📚 How to Use:</h3>
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    <div style={{
+                      background: '#ffffff',
+                      padding: '15px',
+                      borderRadius: '6px',
+                      borderLeft: '4px solid #007bff'
+                    }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>
+                        Step 1 - {selectedOS === 'windows' ? 'Windows' : 'macOS/Linux'}:
+                      </h4>
+                      <p style={{ margin: 0 }}>
+                        {selectedOS === 'windows' 
+                          ? 'Open PowerShell or Command Prompt in the folder containing yt-dlp.exe and ffmpeg.exe'
+                          : 'Open Terminal and navigate to your desired folder'
+                        }
+                      </p>
+                    </div>
+                    
+                    <div style={{
+                      background: '#ffffff',
+                      padding: '15px',
+                      borderRadius: '6px',
+                      borderLeft: '4px solid #007bff'
+                    }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 2:</h4>
+                      <p style={{ margin: 0 }}>
+                        Run the commands above one by one, or download the script file and run it
+                      </p>
+                    </div>
+                    
+                    <div style={{
+                      background: '#ffffff',
+                      padding: '15px',
+                      borderRadius: '6px',
+                      borderLeft: '4px solid #007bff'
+                    }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Step 3:</h4>
+                      <p style={{ margin: 0 }}>
+                        Your chapter files will be created with names like: 01_Introduction.mp3, 02_Getting_Started.mp3, etc.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <footer style={{
+          textAlign: 'center',
+          padding: '20px 0',
+          color: '#666',
+          borderTop: '1px solid #e1e5e9',
+          marginTop: '40px'
+        }}>
+          <p style={{ margin: 0 }}>
+            This tool generates CLI commands only - no files are processed on our servers.
+          </p>
+        </footer>
+      </div>
+    </>
+  );
+}
