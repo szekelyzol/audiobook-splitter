@@ -589,6 +589,7 @@ echo "Your chapter files are ready!"`;
           <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
           <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
           <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+          <hr></hr>
 
           {/* Instructions */}
           <div className={styles.sidebarSection}>
@@ -603,6 +604,8 @@ echo "Your chapter files are ready!"`;
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using.</p>
             
           </div>
+          
+          <hr></hr>
 
           {/* Requirements */}
           <div className={styles.sidebarSection}>
@@ -624,6 +627,8 @@ echo "Your chapter files are ready!"`;
               <p>for linux, you most probably do not need help.</p>
             </div> 
           </div>
+          
+          <hr></hr>
 
           {/* Formats */}
           <div className={styles.sidebarSection}>
@@ -638,7 +643,7 @@ echo "Your chapter files are ready!"`;
           {/* Legal */}
           <div className={styles.disclaimer}>
             <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
-            <p>using it does require some basic understanding of using terminals and installing stuff, but i am sure you will manage.</p>
+            <p>using it does require some basic understanding of terminals and installing stuff, but i am sure you will manage.</p>
             <p>just make sure that you only use it with content that is legally available for you to download.</p>
           </div>
         </div>
