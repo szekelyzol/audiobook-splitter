@@ -68,12 +68,16 @@
   color: #ff0000;
   margin: 10px 0;
   font-size: 14px;
+  padding: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .successMinimal {
   color: #000;
   margin: 10px 0;
   font-size: 14px;
+  padding: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .minimalCommands {
