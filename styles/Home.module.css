@@ -192,12 +192,13 @@
 }
 
 .introbox {
-  font-size: 12px;
+  font-size: 14px;
   color: #666;
   padding: 10px;
-  background: #cdffff;
+  background: #d7e9e9;
   border: 1px solid #ddd;
   margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 /* Responsive */
