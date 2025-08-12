@@ -13,7 +13,7 @@ export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
   const [selectedOS, setSelectedOS] = useState<OSType>('windows');
-  const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
+  const [generatedCommands, setGeneratedCommands] = useState<{ windows: string[], macos: string[] }>({ windows: [], macos: [] });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isValidYouTubeUrl = (url: string): boolean => {
@@ -136,43 +136,65 @@ export default function Home() {
       return;
     }
 
-    const commands = [];
-    const ytDlpCmd = selectedOS === 'windows' ? '.\\yt-dlp' : 'yt-dlp';
+    const windowsCommands = [];
+    const macosCommands = [];
 
     // If no timestamps, just download the full audio
     if (parsedChapters.length === 0) {
-      commands.push('# Download full audio as single file');
-      commands.push(`${ytDlpCmd} -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
-      setGeneratedCommands(commands);
+      windowsCommands.push('# Download full audio as single file');
+      windowsCommands.push(`.\\yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
+      
+      macosCommands.push('# Download full audio as single file');
+      macosCommands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
+      
+      setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
       return;
     }
 
-    // Otherwise, download and split
-    const ffmpegCmd = selectedOS === 'windows' ? '.\\ffmpeg' : 'ffmpeg';
-
-    commands.push('# Step 1: Download audio from source');
-    commands.push(`${ytDlpCmd} -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
-    commands.push('');
-    commands.push('# Step 2: Split audio into chapters');
-    commands.push('');
+    // Generate Windows commands
+    windowsCommands.push('# Step 1: Download audio from source');
+    windowsCommands.push(`.\\yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
+    windowsCommands.push('');
+    windowsCommands.push('# Step 2: Split audio into chapters');
+    windowsCommands.push('');
 
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `${ffmpegCmd} -i "audiobook.mp3" -ss ${chapter.start}`;
+      let cmd = `.\\ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
       
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
       
       cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
-      commands.push(cmd);
+      windowsCommands.push(cmd);
     });
 
-    setGeneratedCommands(commands);
+    // Generate macOS/Linux commands
+    macosCommands.push('# Step 1: Download audio from source');
+    macosCommands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
+    macosCommands.push('');
+    macosCommands.push('# Step 2: Split audio into chapters');
+    macosCommands.push('');
+
+    parsedChapters.forEach((chapter, index) => {
+      const paddedIndex = (index + 1).toString().padStart(2, '0');
+      let cmd = `ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
+      
+      if (chapter.end) {
+        cmd += ` -to ${chapter.end}`;
+      }
+      
+      cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
+      macosCommands.push(cmd);
+    });
+
+    setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
   };
 
   const downloadBatchFile = () => {
     const parsedChapters = parseTimestamps(timestampInput);
+    const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
     
     let scriptContent = '';
     
@@ -186,7 +208,7 @@ echo ========================================
 echo.
 
 echo Downloading audio as single file...
-${generatedCommands.find(cmd => cmd.includes('yt-dlp')) || ''}
+${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
 
 if %ERRORLEVEL% neq 0 (
     echo ERROR: Download failed!
@@ -209,7 +231,7 @@ echo ========================================
 echo.
 
 echo [1/2] Downloading audio...
-${generatedCommands.find(cmd => cmd.includes('yt-dlp')) || ''}
+${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
 
 if %ERRORLEVEL% neq 0 (
     echo ERROR: Download failed!
@@ -219,7 +241,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [2/2] Splitting into ${parsedChapters.length} chapters...
-${generatedCommands
+${commands
   .filter(cmd => cmd.includes('ffmpeg'))
   .join('\n')}
 
@@ -241,7 +263,7 @@ echo "========================================"
 echo
 
 echo "Downloading audio as single file..."
-${generatedCommands.find(cmd => cmd.includes('yt-dlp')) || ''}
+${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Download failed!"
@@ -263,7 +285,7 @@ echo "========================================"
 echo
 
 echo "[1/2] Downloading audio..."
-${generatedCommands.find(cmd => cmd.includes('yt-dlp')) || ''}
+${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Download failed!"
@@ -272,7 +294,7 @@ fi
 
 echo
 echo "[2/2] Splitting into ${parsedChapters.length} chapters..."
-${generatedCommands
+${commands
   .filter(cmd => cmd.includes('ffmpeg'))
   .join('\n')}
 
@@ -296,7 +318,8 @@ echo "Your chapter files are ready!"`;
   };
 
   const copyCommands = () => {
-    navigator.clipboard.writeText(generatedCommands.join('\n'));
+    const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
+    navigator.clipboard.writeText(commands.join('\n'));
     alert('Commands copied to clipboard!');
   };
 
@@ -358,30 +381,6 @@ echo "Your chapter files are ready!"`;
           <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
         )}
 
-        {/* OS Selection */}
-        <div className={styles.sidebarSection}>
-          <h3>operating system</h3>
-          <p>this affects the format of the batch / shell script, and how paths are defined in the generated commands. i know, i could automate this. meh</p>
-          <label>
-            <input
-              type="radio"
-              value="windows"
-              checked={selectedOS === 'windows'}
-              onChange={(e) => setSelectedOS(e.target.value as OSType)}
-            />
-            windows
-          </label>
-          <label>
-            <input
-              type="radio"
-              value="macos"
-              checked={selectedOS === 'macos'}
-              onChange={(e) => setSelectedOS(e.target.value as OSType)}
-            />
-            macos/linux
-          </label>
-        </div>
-
         <button 
           onClick={generateCommands}
           disabled={!sourceUrl || !isValidYouTubeUrl(sourceUrl)}
@@ -391,15 +390,29 @@ echo "Your chapter files are ready!"`;
         </button>
 
         {/* Generated Commands */}
-        {generatedCommands.length > 0 && (
+        {(generatedCommands.windows.length > 0 || generatedCommands.macos.length > 0) && (
           <div className={styles.minimalCommands}>
-            <pre>{generatedCommands.join('\n')}</pre>
+            <div className={styles.osToggle}>
+              <button 
+                className={selectedOS === 'windows' ? styles.osToggleActive : ''}
+                onClick={() => setSelectedOS('windows')}
+              >
+                windows
+              </button>
+              <button 
+                className={selectedOS === 'macos' ? styles.osToggleActive : ''}
+                onClick={() => setSelectedOS('macos')}
+              >
+                mac/linux
+              </button>
+            </div>
+            <pre>{(selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos).join('\n')}</pre>
             <div className={styles.minimalActions}>
               <button onClick={copyCommands}>copy</button>
               <button onClick={downloadBatchFile}>
                 download .{selectedOS === 'windows' ? 'bat' : 'sh'}
               </button>
-              <button onClick={() => setGeneratedCommands([])}>reset</button>
+              <button onClick={() => setGeneratedCommands({ windows: [], macos: [] })}>reset</button>
             </div>
           </div>
         )}
@@ -421,7 +434,7 @@ echo "Your chapter files are ready!"`;
             </div> 
             <p><strong>2. paste a youtube url.</strong> note that youtube shorts are not supported</p>
             <p><strong>3. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section</p>
-            <p><strong>4. click on generate to create the commands.</strong> the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
+            <p><strong>4. click on generate to create the commands.</strong> you can toggle between windows and macos/linux commands. the tool also offers to download a batch / shell script that helps you automate the commands on your device. it is not a virus, but if you do not want to download it, feel free to just ignore it and only copy the commands manually</p>
             <p><strong>5. run the resulting commands in a terminal.</strong> do this in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located</p>
             <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using</p>
           </div>
