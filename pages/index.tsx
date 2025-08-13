@@ -12,8 +12,8 @@ export default function Home() {
   const [timestampInput, setTimestampInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
 
-  // Accordion: which sidebar section is open
-  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null); // info collapsed by default
+  // Accordion: which sidebar section is open?
+  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null);
   const toggleSection = (key: 'info' | 'requirements' | 'howto') => {
     setOpenSection(prev => (prev === key ? null : key));
   };
@@ -133,7 +133,7 @@ export default function Home() {
     
       const commands: string[] = [];
 
-    // If no timestamps, just download the full audio
+    // If no timestamps are added, just download the full audio
     if (parsedChapters.length === 0) {
       commands.push('# Download full audio as single file');
       commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
@@ -142,7 +142,7 @@ export default function Home() {
       return;
     }
 
-    // Generate macOS/Linux commands
+    // Generate macOS commands
     commands.push('# Step 1: Download audio from source');
     commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
     commands.push('');
@@ -176,8 +176,6 @@ export default function Home() {
 
   // Package-manager installer commands
   const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp && winget install -e --id FFmpeg.FFmpeg';
-  const WIN_CHOCO  = 'choco install -y yt-dlp ffmpeg';
-  const WIN_SCOOP  = 'scoop install yt-dlp ffmpeg';
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
   
@@ -251,7 +249,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Sidebar (always visible, with accordion behavior) */}
+      {/* SIDEBAR (always visible, with accordion behavior) */}
       <div className={`${styles.sidebar} ${styles.sidebarOpen}`}>
         <div className={styles.sidebarContent}>
 
@@ -278,35 +276,24 @@ export default function Home() {
               <h2>requirements</h2>
             </summary>
             <div className={styles.sidebarSection}>
-              <p>you need two command‑line tools:</p>
+              <p>You need two command‑line tools:</p>
               <p><strong>1. yt-dlp</strong> — downloads the audio</p>
               <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-              <p>install them with your OS package manager for the smoothest experience.</p>
 
-              <h3>install via package manager</h3>
+              <h3>Install via package manager</h3>
+
+              <p>If you do not have a package manager yet, install WinGet for Windows, or homebrew for macOS.</p>
 
               <p><strong>windows</strong></p>
               <div className={styles.minimalCommands}>
-                <p>winget (recommended)</p>
+                <p>winget</p>
                 <pre>{WIN_WINGET}</pre>
                 <div className={styles.minimalActions}>
                   <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
                 </div>
-
-                <p>chocolatey</p>
-                <pre>{WIN_CHOCO}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(WIN_CHOCO)}>copy choco</button>
-                </div>
-
-                <p>scoop</p>
-                <pre>{WIN_SCOOP}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(WIN_SCOOP)}>copy scoop</button>
-                </div>
               </div>
 
-              <p><strong>macos</strong></p>
+              <p><strong>macOS</strong></p>
               <div className={styles.minimalCommands}>
                 <p>homebrew</p>
                 <pre>{MAC_BREW}</pre>
@@ -315,9 +302,15 @@ export default function Home() {
                 </div>
               </div>
 
-              <p>you can also install manually:</p>
+              <h3>install manually</h3>
+
               <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
               <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
+              <div className={styles.disclaimer}>
+              <p>finding the right ffmpeg package can be a bit tricky. for windows, download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
+              <p>for macOS, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
+              <p>X.Y.Z. is going to be a version number.</p>
+              </div>
             </div>
           </details>
 
@@ -329,15 +322,15 @@ export default function Home() {
               <h2>how to use</h2>
             </summary>
             <div className={styles.sidebarSection}>
-              <h3>steps</h3>
-              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
-              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
-              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
-              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
-              <p><strong>5.</strong> run the commands in a terminal.</p>
-              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
 
-          <hr />
+              <h3>steps</h3>
+
+              <p><strong>1.</strong> Install the required packages.</p>
+              <p><strong>2.</strong> Paste a youtube url (shorts not supported).</p>
+              <p><strong>3.</strong> Paste timestamps (from youtube description/comments).</p>
+              <p><strong>4.</strong> Click <em>generate</em> to create the commands.</p>
+              <p><strong>5.</strong> Run the generated commands in a terminal.</p>
+              <p><strong>6.</strong> Your mp3 tracks should be ready in the current folder.</p>
 
           {/* TIMESTAMP FORMAT section */}
 
