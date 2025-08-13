@@ -1,8 +1,20 @@
-/* Minimal Monochrome Design */
+/* Main style */
 .minimalContainer {
   position: relative;
   min-height: 100vh;
   background: #fff;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    right: -100%;
+  }
+  
+  .mainView {
+    padding: 60px 15px;
+  }
 }
 
 .mainView {
@@ -13,7 +25,7 @@
 
 .minimalTitle {
   font-size: 24px;
-  font-weight: 300;
+  font-weight: 400;
   margin-bottom: 40px;
   color: #000;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -148,7 +160,7 @@
 .sidebarContent h2 {
   font-size: 18px;
   margin-bottom: 30px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .sidebarSection {
@@ -201,16 +213,4 @@
   margin-top: 10px;
   margin-bottom: 10px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    right: -100%;
-  }
-  
-  .mainView {
-    padding: 60px 15px;
-  }
 }

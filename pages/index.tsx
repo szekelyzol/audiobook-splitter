@@ -258,7 +258,7 @@ export default function Home() {
             <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
               <h2>info</h2>
             </summary>
-            <p>I created this tool to download audiobooks from youtube and split them into separate chapters.</p>
+            <p>I created this tool as a tech experiment to download audiobooks from youtube and split them into separate chapters.</p>
             <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
             <p>You can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
 
@@ -272,6 +272,9 @@ export default function Home() {
 
           {/* REQUIREMENTS and INSTALLER section */}
           <details open={openSection === 'requirements'}>
+            
+            <br />
+
             <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
               <h2>requirements</h2>
             </summary>
@@ -279,6 +282,7 @@ export default function Home() {
               <p>You need two command‑line tools:</p>
               <p><strong>1. yt-dlp</strong> — downloads the audio</p>
               <p><strong>2. ffmpeg</strong> — splits the chapters</p>
+              <p>Both are free and open-source.</p>
 
               <h3>Install via package manager</h3>
 
@@ -291,7 +295,7 @@ export default function Home() {
                   <button onClick={() => copyLine(WIN_WINGET)}>copy winget commands</button>
                 </div>
               </div>
-              
+
               <div className={styles.minimalCommands}>
                 <p>macOS - homebrew</p>
                 <pre>{MAC_BREW}</pre>
@@ -331,6 +335,8 @@ export default function Home() {
               <p><strong>6.</strong> Your mp3 tracks should be ready in the current folder.</p>
 
           {/* TIMESTAMP FORMAT section */}
+
+            <br />
 
             <div className={styles.disclaimer}>
               <h3>supported timestamp formats</h3>
