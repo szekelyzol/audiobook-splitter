@@ -178,6 +178,9 @@ export default function Home() {
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
   
+  // Trim timestamps
+  const hasTimestamps = timestampInput.trim().length > 0;
+
   // compute once per render for UI messages
   const parsedChapters = parseTimestamps(timestampInput);
 
@@ -217,11 +220,11 @@ export default function Home() {
         {!sourceUrl && timestampInput && (
           <div className={styles.errorMessage}>⚠ missing youtube url</div>
         )}
-        {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length === 0 && timestampInput && (
-          <div className={styles.errorMessage}>✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file</div>
+        {sourceUrl && isValidYouTubeUrl(sourceUrl) && hasTimestamps && parsedChapters.length === 0 && (
+          <div className={styles.infoMessage}>✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file</div>
         )}
-        {sourceUrl && isValidYouTubeUrl(sourceUrl) && !timestampInput.trim() && (
-          <div className={styles.infoMessage}>✓ youtube url looks good, but no timestamps provided - this will download as single mp3 file</div>
+        {sourceUrl && isValidYouTubeUrl(sourceUrl) && !hasTimestamps && (
+          <div className={styles.infoMessage}>✓ youtube url looks good, but no timestamps provided — this will download as a single mp3 file</div>
         )}
         {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length > 0 && (
           <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
