@@ -327,7 +327,7 @@ export default function Home() {
 
               <h3>steps</h3>
 
-              <p><strong>1.</strong> Install the required packages.</p>
+              <p><strong>1.</strong> Install the required tools.</p>
               <p><strong>2.</strong> Paste a youtube url (shorts not supported).</p>
               <p><strong>3.</strong> Paste timestamps (from youtube description/comments).</p>
               <p><strong>4.</strong> Click <em>generate</em> to create the commands.</p>

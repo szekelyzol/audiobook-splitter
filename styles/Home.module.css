@@ -33,6 +33,7 @@
 
 .minimalInput,
 .minimalTextarea {
+  border-radius: 8px;
   width: 100%;
   padding: 12px;
   margin-bottom: 20px;
@@ -48,6 +49,7 @@
 }
 
 .minimalButton {
+  border-radius: 8px;
   width: 100%;
   padding: 12px;
   background: #000;
@@ -93,6 +95,7 @@
 }
 
 .minimalCommands {
+  border-radius: 8px;
   margin-top: 30px;
   border: 1px solid #000;
   padding: 20px;
@@ -114,6 +117,7 @@
 }
 
 .minimalActions button {
+  border-radius: 8px;
   flex: 1;
   min-width: 60px;
   padding: 8px;
@@ -171,7 +175,7 @@
   font-size: 14px;
   margin-bottom: 10px;
   text-transform: uppercase;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .sidebarSection p {
@@ -196,6 +200,7 @@
 }
 
 .disclaimer {
+  border-radius: 8px;
   font-size: 12px;
   color: #666;
   padding: 10px;
