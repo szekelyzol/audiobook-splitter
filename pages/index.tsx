@@ -491,34 +491,29 @@ echo "Your chapter files are ready!"`;
     alert('Commands copied to clipboard!');
   };
 
-  // Quick copy helper for one-liners
+  // Quick copy helper for installer commands
   const copyLine = (text: string) => {
     navigator.clipboard.writeText(text)
       .then(() => alert('Command copied!'))
       .catch(() => alert('Copy failed. Please copy manually.'));
   };
 
-  // Easy-install one-liners
+  // Package-manager installer commands
   const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp && winget install -e --id FFmpeg.FFmpeg';
   const WIN_CHOCO  = 'choco install -y yt-dlp ffmpeg';
   const WIN_SCOOP  = 'scoop install yt-dlp ffmpeg';
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
 
-  const LNX_APT   = 'sudo apt-get update && sudo apt-get install -y yt-dlp ffmpeg';
-  const LNX_DNF   = 'sudo dnf install -y yt-dlp ffmpeg';
-  const LNX_PAC   = 'sudo pacman -Sy --noconfirm yt-dlp ffmpeg';
-  const LNX_ZYP   = 'sudo zypper install -y yt-dlp ffmpeg';
-
   const parsedChapters = parseTimestamps(timestampInput);
 
   return (
     <div className={styles.minimalContainer}>
-      {/* Main View */}
+      {/* Main section */}
       <div className={styles.mainView}>
         <h1 className={styles.minimalTitle}>audiobook splitter</h1>
 
-        {/* Intro */}
+        {/* INTRO section */}
         <div className={styles.introbox}>
           <p><strong>welcome!</strong></p>
           <p>this tool helps you download audio from youtube and split the resulting file into individual tracks, based on the timestamps.</p>
@@ -542,7 +537,7 @@ echo "Your chapter files are ready!"`;
           className={styles.minimalTextarea}
         />
 
-        {/* Error/Success Messages */}
+        {/* Error/Success messages */}
         {sourceUrl && !isValidYouTubeUrl(sourceUrl) && (
           <div className={styles.errorMessage}>⚠ invalid youtube url format</div>
         )}
@@ -567,7 +562,7 @@ echo "Your chapter files are ready!"`;
           generate
         </button>
 
-        {/* Generated Commands */}
+        {/* GENERATED COMMANDS section */}
         {(generatedCommands.windows.length > 0 || generatedCommands.macos.length > 0) && (
           <div className={styles.minimalCommands}>
             <div className={styles.osToggle}>
@@ -599,28 +594,28 @@ echo "Your chapter files are ready!"`;
         )}
       </div>
 
-      {/* Sidebar (always visible, accordion behavior) */}
+      {/* Sidebar (always visible, with accordion behavior) */}
       <div className={`${styles.sidebar} ${styles.sidebarOpen}`}>
         <div className={styles.sidebarContent}>
 
-          {/* INFO (collapsed by default) */}
+          {/* INFO section */}
           <details open={openSection === 'info'}>
             <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
               <h2>info</h2>
             </summary>
-            <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
-            <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
-            <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+            <p>I created this tool to download audiobooks from youtube and split them into separate chapters.</p>
+            <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+            <p>You can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
 
-            <div className={styles.disclaimer} style={{ marginTop: 10 }}>
-              <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
-              <p>make sure that you only use it with content that is legally available for you to download.</p>
+            <div className={styles.disclaimer}>
+              <p><strong>Note:</strong> this tool only generates commands that you can use locally on your device. It does not automatically download content from youtube for you, and does not run anything on your device.</p>
+              <p>Make sure that you only use it with content that is legally available for you to download.</p>
             </div>
           </details>
 
           <hr />
 
-          {/* REQUIREMENTS (now includes package manager one-liners) */}
+          {/* REQUIREMENTS and INSTALLER section */}
           <details open={openSection === 'requirements'}>
             <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
               <h2>requirements</h2>
@@ -631,7 +626,7 @@ echo "Your chapter files are ready!"`;
               <p><strong>2. ffmpeg</strong> — splits the chapters</p>
               <p>install them with your OS package manager for the smoothest experience.</p>
 
-              <h3 style={{ marginTop: 15 }}>install via package manager</h3>
+              <h3>install via package manager</h3>
 
               <p><strong>windows</strong></p>
               <div className={styles.minimalCommands}>
@@ -654,7 +649,7 @@ echo "Your chapter files are ready!"`;
                 </div>
               </div>
 
-              <p style={{ marginTop: 15 }}><strong>macos</strong></p>
+              <p><strong>macos</strong></p>
               <div className={styles.minimalCommands}>
                 <p>homebrew</p>
                 <pre>{MAC_BREW}</pre>
@@ -663,34 +658,7 @@ echo "Your chapter files are ready!"`;
                 </div>
               </div>
 
-              <p style={{ marginTop: 15 }}><strong>linux</strong></p>
-              <div className={styles.minimalCommands}>
-                <p>debian/ubuntu</p>
-                <pre>{LNX_APT}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(LNX_APT)}>copy apt</button>
-                </div>
-
-                <p>fedora</p>
-                <pre>{LNX_DNF}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
-                </div>
-
-                <p>arch</p>
-                <pre>{LNX_PAC}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(LNX_PAC)}>copy pacman</button>
-                </div>
-
-                <p>opensuse</p>
-                <pre>{LNX_ZYP}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
-                </div>
-              </div>
-
-              <p>advanced users can also install manually:</p>
+              <p>you can also install manually:</p>
               <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
               <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
             </div>
@@ -698,7 +666,7 @@ echo "Your chapter files are ready!"`;
 
           <hr />
 
-          {/* HOW TO USE (now includes supported timestamp formats) */}
+          {/* HOW TO USE section */}
           <details open={openSection === 'howto'}>
             <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
               <h2>how to use</h2>
@@ -712,15 +680,20 @@ echo "Your chapter files are ready!"`;
               <p><strong>5.</strong> run the commands in a terminal.</p>
               <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
 
-              <h3 style={{ marginTop: 15 }}>supported timestamp formats</h3>
+          <hr />
+
+          {/* TIMESTAMP FORMAT section */}
+
+            <div className={styles.disclaimer}>
+              <h3>supported timestamp formats</h3>
               <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
               <p>• simple format: 0:00 chapter title</p>
               <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-                see the webvtt specs for more info and examples
+                See the webvtt specs for more info and examples.
               </a></p>
             </div>
+            </div>
           </details>
-
         </div>
       </div>
     </div>
