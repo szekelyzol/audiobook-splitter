@@ -136,22 +136,22 @@ export default function Home() {
     // If no timestamps are added, just download the full audio
     if (parsedChapters.length === 0) {
       commands.push('# Download full audio as single file');
-      commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
+      commands.push(`yt-dlp -x --audio-format mp3 -o "audio.mp3" "${sourceUrl}"`);
 
       setGeneratedCommands(commands);
       return;
     }
 
-    // Generate macOS commands
+    // Generate commands
     commands.push('# Step 1: Download audio from source');
-    commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
+    commands.push(`yt-dlp -x --audio-format mp3 -o "audio.%(ext)s" "${sourceUrl}"`);
     commands.push('');
     commands.push('# Step 2: Split audio into chapters');
     commands.push('');
 
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
+      let cmd = `ffmpeg -i "audio.mp3" -ss ${chapter.start}`;
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
