@@ -284,21 +284,19 @@ export default function Home() {
 
               <p>If you do not have a package manager yet, install WinGet for Windows, or homebrew for macOS.</p>
 
-              <p><strong>windows</strong></p>
               <div className={styles.minimalCommands}>
-                <p>winget</p>
+                <p>Windows - WinGet</p>
                 <pre>{WIN_WINGET}</pre>
                 <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
+                  <button onClick={() => copyLine(WIN_WINGET)}>copy winget commands</button>
                 </div>
               </div>
-
-              <p><strong>macOS</strong></p>
+              
               <div className={styles.minimalCommands}>
-                <p>homebrew</p>
+                <p>macOS - homebrew</p>
                 <pre>{MAC_BREW}</pre>
                 <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(MAC_BREW)}>copy brew</button>
+                  <button onClick={() => copyLine(MAC_BREW)}>copy brew commands</button>
                 </div>
               </div>
 

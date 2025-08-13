@@ -148,7 +148,7 @@
 .sidebarContent h2 {
   font-size: 18px;
   margin-bottom: 30px;
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .sidebarSection {
@@ -159,7 +159,7 @@
   font-size: 14px;
   margin-bottom: 10px;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 300;
 }
 
 .sidebarSection p {
