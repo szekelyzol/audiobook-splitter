@@ -183,16 +183,6 @@
   margin: 5px 0;
 }
 
-.sidebarSection label {
-  display: block;
-  margin: 5px 0;
-  cursor: pointer;
-}
-
-.sidebarSection input[type="radio"] {
-  margin-right: 8px;
-}
-
 .sidebarSection a {
   color: #000;
   font-size: 13px;

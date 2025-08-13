@@ -190,10 +190,9 @@ export default function Home() {
 
         {/* INTRO section */}
         <div className={styles.introbox}>
-          <p><strong>welcome!</strong></p>
-          <p>this tool helps you download audio from youtube and split the resulting file into individual tracks, based on the timestamps.</p>
-          <p>it offers a manual and an automated workflow: use the generated command line prompts, or use the script that runs the prompts for you.</p>
-          <p>open the sidebar for more details!</p>
+          <p><strong>Welcome!</strong></p>
+          <p>This tool helps you download audio from youtube and split the resulting file into individual tracks, based on the timestamps.</p>
+          <p>It requires minimal setup to work. Check the sidebar for more details!</p>
         </div>
 
         <input
@@ -317,6 +316,8 @@ export default function Home() {
           </details>
 
           <hr />
+            
+          <br />
 
           {/* HOW TO USE section */}
           <details open={openSection === 'howto'}>
