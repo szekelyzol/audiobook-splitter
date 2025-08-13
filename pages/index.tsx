@@ -14,7 +14,6 @@ export default function Home() {
   const [timestampInput, setTimestampInput] = useState('');
   const [selectedOS, setSelectedOS] = useState<OSType>('windows');
   const [generatedCommands, setGeneratedCommands] = useState<{ windows: string[], macos: string[] }>({ windows: [], macos: [] });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isValidYouTubeUrl = (url: string): boolean => {
     if (!url) return false;
@@ -595,14 +594,6 @@ echo "Your chapter files are ready!"`;
 
   return (
     <div className={styles.minimalContainer}>
-      {/* Sidebar Toggle */}
-      <button 
-        className={styles.sidebarToggle}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label="Toggle sidebar"
-      >
-        ☰
-      </button>
 
       {/* Main View */}
       <div className={styles.mainView}>
@@ -690,138 +681,108 @@ echo "Your chapter files are ready!"`;
       </div>
 
       {/* Sidebar */}
-      <div className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+      <div className={`${styles.sidebar} ${styles.sidebarOpen}`}>
         <div className={styles.sidebarContent}>
-          <h2>info</h2>
-          <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
-          <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
-          <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
-          <hr></hr>
-
-          {/* Instructions */}
-          <div className={styles.sidebarSection}>
-            <h3>how to use</h3>
-            <p><strong>1. paste a youtube url.</strong> youtube shorts are not supported.</p>
-            <p><strong>2. write or paste timestamps.</strong> you can usually find these in the youtube video description or in the comment section.</p>
-            <p><strong>3. click on generate to create commands and scripts.</strong> you can toggle between windows and mac/linux outputs.</p>
-            <p><strong>4. make sure you have the correct tools set up to run the generated commands.</strong> you can download and run the installer script to automatically set up <code>yt-dlp</code> and <code>ffmpeg</code>, or you can manually set up your environment based on the <strong>required tools</strong> below.</p>
-            <p><strong>5. run the audio splitting commands.</strong> you can download and run the audiobook splitting script that does everything for you automatically, or you can run the resulting commands manually in a terminal.
-            the commands and the script work in the same way: they grab the audio file from youtube with <code>yt-dlp</code> and split it into individual tracks using <code>ffmpeg</code>.</p>
-            <p>you must do this step in the same folder where both the <code>yt-dlp</code> and the <code>ffmpeg</code> executables are located.</p>
-            <p><strong>6. check the output.</strong> it should be a bunch of mp3 files ready for you to upload to whatever device you are using.</p>
             
-          </div>
-          
-          <hr></hr>
-
-          {/* Requirements */}
-
+          <details open>
+            <summary><h2>info</h2></summary>
+            <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
+            <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+            <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+            
+            <div className={styles.disclaimer} style={{ marginTop: 10 }}>
+              <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
+              <p>make sure that you only use it with content that is legally available for you to download.</p>
+            </div>
+          </details>
+            
           <hr />
-
-          <div className={styles.sidebarSection}>
-            <h3>easy install (recommended)</h3>
-            <p>copy one of the commands below into your terminal. these install both <code>yt-dlp</code> and <code>ffmpeg</code>.</p>
-
-            <p><strong>windows</strong></p>
-            <div className={styles.minimalCommands}>
-              <p>winget (preferred on Windows 10/11)</p>
-              <pre>{WIN_WINGET}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
+            
+          <details>
+            <summary><h2>requirements</h2></summary>
+            <div className={styles.sidebarSection}>
+              <p>you need two command‑line tools:</p>
+              <p><strong>1. yt-dlp</strong> — downloads the audio</p>
+              <p><strong>2. ffmpeg</strong> — splits the chapters</p>
+              <p>install them with your OS package manager for the smoothest experience (see “how to use” below for one‑liners).</p>
+              <p>advanced users can also install manually:</p>
+              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
+              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
+            </div>
+          </details>
+            
+          <hr />
+            
+          <details>
+            <summary><h2>how to use</h2></summary>
+            <div className={styles.sidebarSection}>
+              <h3>steps</h3>
+              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
+              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
+              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
+              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
+              <p><strong>5.</strong> run the commands in a terminal.</p>
+              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
+            
+              {/* package‑manager one‑liners only (no script download) */}
+              <h3 style={{ marginTop: 15 }}>install via package manager</h3>
+            
+              <p><strong>windows</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>winget (recommended)</p>
+                <pre>{WIN_WINGET}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
+                </div>
+                <p>chocolatey</p>
+                <pre>{WIN_CHOCO}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_CHOCO)}>copy choco</button>
+                </div>
+                <p>scoop</p>
+                <pre>{WIN_SCOOP}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_SCOOP)}>copy scoop</button>
+                </div>
               </div>
-
-              <p>chocolatey</p>
-              <pre>{WIN_CHOCO}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(WIN_CHOCO)}>copy choco</button>
+            
+              <p style={{ marginTop: 15 }}><strong>macos</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>homebrew</p>
+                <pre>{MAC_BREW}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(MAC_BREW)}>copy brew</button>
+                </div>
               </div>
-
-              <p>scoop</p>
-              <pre>{WIN_SCOOP}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(WIN_SCOOP)}>copy scoop</button>
+            
+              <p style={{ marginTop: 15 }}><strong>linux</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>debian/ubuntu</p>
+                <pre>{LNX_APT}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_APT)}>copy apt</button>
+                </div>
+            
+                <p>fedora</p>
+                <pre>{LNX_DNF}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
+                </div>
+            
+                <p>arch</p>
+                <pre>{LNX_PAC}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_PAC)}>copy pacman</button>
+                </div>
+            
+                <p>opensuse</p>
+                <pre>{LNX_ZYP}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
+                </div>
               </div>
             </div>
-
-            <p style={{ marginTop: 15 }}><strong>macos</strong></p>
-            <div className={styles.minimalCommands}>
-              <p>homebrew</p>
-              <pre>{MAC_BREW}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(MAC_BREW)}>copy brew</button>
-              </div>
-            </div>
-
-            <p style={{ marginTop: 15 }}><strong>linux</strong></p>
-            <div className={styles.minimalCommands}>
-              <p>debian/ubuntu</p>
-              <pre>{LNX_APT}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(LNX_APT)}>copy apt</button>
-              </div>
-
-              <p>fedora</p>
-              <pre>{LNX_DNF}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
-              </div>
-
-              <p>arch</p>
-              <pre>{LNX_PAC}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(LNX_PAC)}>copy pacman</button>
-              </div>
-
-              <p>opensuse</p>
-              <pre>{LNX_ZYP}</pre>
-              <div className={styles.minimalActions}>
-                <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
-              </div>
-            </div>
-
-            <div className={styles.disclaimer} style={{ marginTop: 15 }}>
-              <p><strong>note:</strong> if a package manager is not available or needs admin rights, you can use the <em>tool setup script</em> button on the main page — it can do a local, no‑admin install on windows and uses package managers on mac/linux.</p>
-            </div>
-          </div>
-
-          <div className={styles.sidebarSection}>
-            <h3>required tools</h3>
-            <p><strong>1. yt-dlp - downloads audio</strong></p>
-            <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">
-              → download yt-dlp executable
-            </a>
-            <p><strong>2. ffmpeg - splits chapters</strong></p>
-            <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">
-              → download ffmpeg executables
-            </a>
-            <div className={styles.disclaimer}>
-              <p>if you decide to set up your environment manually, you need to put all tools into the same folder for the commands to work!</p>
-              <p>for example, put both the <code>yt-dlp</code> and the <code>ffmpeg</code> executable files into a folder called <code>audiobook-tools</code>. when you get to step 5, navigate to the same folder in your terminal before running the commands.</p>
-              <p>also, finding the right ffmpeg package can be a bit tricky. for windows, you can download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
-              <p>for macos, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
-              <p>X.Y.Z. is going to be a version number.</p>
-              <p>for linux, you most probably do not need help.</p>
-            </div> 
-          </div>
-          
-          <hr></hr>
-
-          {/* Formats */}
-          <div className={styles.sidebarSection}>
-            <h3>supported timestamp formats</h3>
-            <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
-            <p>• simple format: 0:00 chapter title</p>
-            <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-              see the webvtt specs for more info and examples
-            </a></p>
-          </div>
-
-          {/* Legal */}
-          <div className={styles.disclaimer}>
-            <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
-            <p>using it does require some basic understanding of terminals and installing stuff, but i am sure you will manage.</p>
-            <p>just make sure that you only use it with content that is legally available for you to download.</p>
-          </div>
+          </details>
         </div>
       </div>
     </div>

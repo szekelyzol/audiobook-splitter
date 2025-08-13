@@ -163,6 +163,24 @@
   font-weight: 300;
 }
 
+.sidebarContent details {
+  margin-bottom: 20px;
+}
+
+.sidebarContent summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.sidebarContent summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebarContent summary h2 {
+  display: inline-block;
+  margin: 0 0 10px 0;
+}
+
 .sidebarSection {
   margin-bottom: 30px;
 }
