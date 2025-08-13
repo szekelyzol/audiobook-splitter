@@ -672,7 +672,7 @@ echo "Your chapter files are ready!"`;
                 </div>
 
                 <p>fedora</p>
-                <pre>{LNC_DNF}</pre>
+                <pre>{LNX_DNF}</pre>
                 <div className={styles.minimalActions}>
                   <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
                 </div>
