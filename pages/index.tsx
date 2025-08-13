@@ -129,10 +129,9 @@ export default function Home() {
   };
 
     const generateCommands = () => {
-      const parsedChapters = parseTimestamps(timestampInput);
       if (!sourceUrl) return;
-
-    const commands: string[] = [];
+    
+      const commands: string[] = [];
 
     // If no timestamps, just download the full audio
     if (parsedChapters.length === 0) {
@@ -160,6 +159,9 @@ export default function Home() {
       commands.push(cmd);
     });
 
+    setGeneratedCommands(commands);
+  }  
+
   const copyCommands = () => {
     navigator.clipboard.writeText(generatedCommands.join('\n'));
     alert('Commands copied to clipboard!');
@@ -178,6 +180,9 @@ export default function Home() {
   const WIN_SCOOP  = 'scoop install yt-dlp ffmpeg';
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
+  
+  // compute once per render for UI messages
+  const parsedChapters = parseTimestamps(timestampInput);
 
   return (
     <div className={styles.minimalContainer}>
