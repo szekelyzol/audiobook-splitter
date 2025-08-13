@@ -14,14 +14,15 @@ export default function Home() {
   const [timestampInput, setTimestampInput] = useState('');
   const [selectedOS, setSelectedOS] = useState<OSType>('windows');
   const [generatedCommands, setGeneratedCommands] = useState<{ windows: string[], macos: string[] }>({ windows: [], macos: [] });
-  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null); // null => all collapsed (info collapsed by default)
+
+  // Accordion: which sidebar section is open
+  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null); // info collapsed by default
   const toggleSection = (key: 'info' | 'requirements' | 'howto') => {
-  setOpenSection(prev => (prev === key ? null : key));
+    setOpenSection(prev => (prev === key ? null : key));
   };
 
   const isValidYouTubeUrl = (url: string): boolean => {
     if (!url) return false;
-    
     const patterns = [
       /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/,
       /^https?:\/\/youtu\.be\/[\w-]+/,
@@ -30,13 +31,12 @@ export default function Home() {
       /^https?:\/\/(www\.)?youtube-nocookie\.com\/embed\/[\w-]+/,
       /^https?:\/\/(www\.)?youtube\.com\/v\/[\w-]+/
     ];
-    
     return patterns.some(pattern => pattern.test(url));
   };
 
   const parseTimestamps = (input: string): Chapter[] => {
     if (!input.trim()) return [];
-    
+
     const lines = input.split('\n').map(line => line.trim()).filter(line => line !== '');
     const chapters: Chapter[] = [];
 
@@ -47,11 +47,11 @@ export default function Home() {
 
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i];
-      
+
       if (line.includes('-->')) {
         const [start, end = ''] = line.split('-->').map(part => part.trim());
         const title = lines[i + 1]?.trim() || `Chapter ${chapters.length + 1}`;
-        
+
         chapters.push({
           start: normalizeTimestamp(start),
           end: normalizeTimestamp(end),
@@ -63,7 +63,7 @@ export default function Home() {
         const timeMatch = line.match(/(\d+:[\d:]+)/);
         let title = '';
         let start = '';
-        
+
         if (timeMatch) {
           start = normalizeTimestamp(timeMatch[1]);
           title = line.replace(timeMatch[0], '').replace(/[-–—]/g, '').trim();
@@ -74,7 +74,7 @@ export default function Home() {
             start = '00:00:00';
           }
         }
-        
+
         if (start && title) {
           chapters.push({
             start,
@@ -85,6 +85,7 @@ export default function Home() {
       }
     }
 
+    // Fill missing end times with next chapter's start
     for (let i = 0; i < chapters.length - 1; i++) {
       if (!chapters[i].end) {
         chapters[i].end = chapters[i + 1].start;
@@ -96,16 +97,14 @@ export default function Home() {
 
   const normalizeTimestamp = (timestamp: string): string => {
     if (!timestamp) return '';
-    
     const cleaned = timestamp.replace(/\.\d+/, '').trim();
     const parts = cleaned.split(':');
-    
+
     if (parts.length === 2) {
       return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
     } else if (parts.length === 3) {
       return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
     }
-    
     return cleaned;
   };
 
@@ -113,16 +112,16 @@ export default function Home() {
     if (!title || title.trim() === '') {
       return 'Untitled_Chapter';
     }
-    
+
     let cleaned = title
       .replace(/^Chapter\s+\d+:?\s*/i, '')
       .replace(/^\d+\.\s*/, '')
       .trim();
-    
+
     if (!cleaned || /^\d+$/.test(cleaned)) {
       cleaned = title.trim();
     }
-    
+
     return cleaned
       .replace(/[<>:"/\\|?*]/g, '_')
       .replace(/\s+/g, '_')
@@ -134,22 +133,19 @@ export default function Home() {
 
   const generateCommands = () => {
     const parsedChapters = parseTimestamps(timestampInput);
-    
-    if (!sourceUrl) {
-      return;
-    }
+    if (!sourceUrl) return;
 
-    const windowsCommands = [];
-    const macosCommands = [];
+    const windowsCommands: string[] = [];
+    const macosCommands: string[] = [];
 
     // If no timestamps, just download the full audio
     if (parsedChapters.length === 0) {
       windowsCommands.push('# Download full audio as single file');
       windowsCommands.push(`.\\yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
-      
+
       macosCommands.push('# Download full audio as single file');
       macosCommands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
-      
+
       setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
       return;
     }
@@ -164,11 +160,9 @@ export default function Home() {
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
       let cmd = `.\\ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
-      
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
-      
       cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
       windowsCommands.push(cmd);
     });
@@ -183,11 +177,9 @@ export default function Home() {
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
       let cmd = `ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
-      
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
-      
       cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
       macosCommands.push(cmd);
     });
@@ -195,261 +187,185 @@ export default function Home() {
     setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
   };
 
-// Replace downloadSetupScript() in pages/index.tsx
-const downloadSetupScript = () => {
-  let scriptContent = '';
+  const downloadSetupScript = () => {
+    // Existing behavior retained; user flows now prefer package managers via sidebar one-liners.
+    let scriptContent = '';
 
-  if (selectedOS === 'windows') {
-    // Windows: prefer winget -> choco -> scoop, then fallback to local install (no admin)
-    scriptContent = `@echo off
-setlocal ENABLEDELAYEDEXPANSION
-
+    if (selectedOS === 'windows') {
+      scriptContent = `@echo off
 echo ========================================
-echo   Audiobook Tools Setup - Windows
+echo     Audiobook Tools Setup - Windows
 echo ========================================
 echo.
-echo This script installs yt-dlp and ffmpeg using a package manager when possible.
-echo Order: winget -> chocolatey -> scoop -> local (no admin).
+echo This script will download yt-dlp and ffmpeg for you.
 echo.
+pause
 
-:: Create a working folder for local fallback
-set "TOOLS_DIR=%CD%\\audiobook-tools"
-if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
+echo.
+echo [1/3] Creating tools folder...
+if not exist "audiobook-tools" mkdir audiobook-tools
+cd audiobook-tools
 
-:: Helper: verify commands
-where yt-dlp >nul 2>&1 && set HAD_YTDLP=1
-where ffmpeg >nul 2>&1 && set HAD_FFMPEG=1
-
-:: ------------------------------------------------
-:: 1) Try winget (preferred)
-:: ------------------------------------------------
-where winget >nul 2>&1
-if %ERRORLEVEL%==0 (
-  echo [winget] attempting to install yt-dlp and ffmpeg...
-  call :winget_try_install yt-dlp.yt-dlp yt-dlp
-  call :winget_try_install FFmpeg.FFmpeg ffmpeg
-  if not defined HAD_YTDLP (where yt-dlp >nul 2>&1) && if not defined HAD_FFMPEG (where ffmpeg >nul 2>&1) (
-    echo [winget] install looks good.
-    goto :verify
-  )
-) else (
-  echo [winget] not found.
-)
-
-:: ------------------------------------------------
-:: 2) Try Chocolatey
-:: ------------------------------------------------
-where choco >nul 2>&1
-if %ERRORLEVEL%==0 (
-  echo [choco] attempting to install packages (may require elevation)...
-  choco install -y yt-dlp ffmpeg
-  if %ERRORLEVEL%==0 goto :verify
-) else (
-  echo [choco] not found.
-)
-
-:: ------------------------------------------------
-:: 3) Try Scoop
-:: ------------------------------------------------
-where scoop >nul 2>&1
-if %ERRORLEVEL%==0 (
-  echo [scoop] attempting to install buckets/packages...
-  :: ensure main bucket exists (usually default)
-  scoop bucket add main >nul 2>&1
-  scoop install yt-dlp ffmpeg
-  if %ERRORLEVEL%==0 goto :verify
-) else (
-  echo [scoop] not found.
-)
-
-:: ------------------------------------------------
-:: 4) Local fallback (no admin, portable binaries)
-:: ------------------------------------------------
-echo [fallback] performing local no-admin install into:
-echo   %TOOLS_DIR%
-pushd "%TOOLS_DIR%"
-
-echo   - downloading yt-dlp.exe ...
+echo.
+echo [2/3] Downloading yt-dlp...
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o yt-dlp.exe
 if %ERRORLEVEL% neq 0 (
-  echo ERROR: failed to download yt-dlp
-  popd & goto :fail
+    echo ERROR: Failed to download yt-dlp!
+    echo Please download manually from: https://github.com/yt-dlp/yt-dlp/releases
+    pause
+    exit /b 1
 )
 
-echo   - downloading ffmpeg (release essentials) ...
+echo.
+echo [3/3] Downloading ffmpeg...
+echo Please wait, this may take a few minutes...
 curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
 if %ERRORLEVEL% neq 0 (
-  echo ERROR: failed to download ffmpeg
-  popd & goto :fail
+    echo ERROR: Failed to download ffmpeg!
+    echo Please download manually from: https://www.gyan.dev/ffmpeg/builds/
+    pause
+    exit /b 1
 )
 
-echo   - extracting ffmpeg with PowerShell Expand-Archive ...
+echo.
+echo Extracting ffmpeg...
 powershell -NoProfile -Command "Expand-Archive -Path 'ffmpeg.zip' -DestinationPath 'ffmpeg' -Force"
 if %ERRORLEVEL% neq 0 (
-  echo ERROR: failed to extract ffmpeg.zip
-  popd & goto :fail
+    echo ERROR: Failed to extract ffmpeg!
+    echo Please extract manually and copy ffmpeg.exe to this folder
+    pause
+    exit /b 1
 )
 
+echo.
+echo Locating ffmpeg.exe and copying next to yt-dlp.exe...
 for /f "delims=" %%F in ('powershell -NoProfile -Command "(Get-ChildItem -Recurse -Filter ffmpeg.exe -Path ffmpeg | Select-Object -First 1).FullName"') do set "FFMPEG_EXE=%%F"
 if not exist "!FFMPEG_EXE!" (
-  echo ERROR: could not locate ffmpeg.exe after extraction
-  popd & goto :fail
+    echo ERROR: ffmpeg.exe not found after extraction.
+    echo Please extract manually and copy ffmpeg.exe to this folder
+    pause
+    exit /b 1
 )
-copy /y "!FFMPEG_EXE!" "%TOOLS_DIR%\\ffmpeg.exe" >nul
-del /q ffmpeg.zip >nul 2>&1
-popd
+copy /y "!FFMPEG_EXE!" "%CD%\\ffmpeg.exe" >nul
 
-:: Temporarily add to PATH for this session
-set "PATH=%TOOLS_DIR%;%PATH%"
-
-:verify
 echo.
-echo Verifying tools on PATH:
-yt-dlp --version || echo (yt-dlp not on PATH)
-ffmpeg -hide_banner -version || echo (ffmpeg not on PATH)
+echo Cleaning up...
+del ffmpeg.zip
 
 echo.
 echo ========================================
-echo   Setup Complete!
+echo     Setup Complete!
 echo ========================================
-echo If commands still aren't found, restart your terminal or add the tool location to PATH.
 echo.
-echo Windows package managers can require elevation; run this in an elevated terminal if prompted.
+echo Your tools are ready in the 'audiobook-tools' folder.
+echo Copy your audiobook commands into this folder and run them!
 echo.
-pause
-exit /b 0
-
-:: --------------- helper labels -----------------
-:winget_try_install
-REM %1 = winget package id to try, %2 = binary to verify
-set "PKGID=%~1"
-set "BINARY=%~2"
-winget install --silent --accept-package-agreements --accept-source-agreements -e --id "%PKGID%"
-where "%BINARY%" >nul 2>&1
-exit /b 0
-
-:fail
-echo.
-echo ========================================
-echo   Setup FAILED
-echo ========================================
-echo You can try running this window as Administrator, or install a package manager:
-echo   - winget: Microsoft Store "App Installer"
-echo   - Chocolatey: https://chocolatey.org/install
-echo   - Scoop: https://scoop.sh
-echo Or use the local fallback above manually.
-echo.
-pause
-exit /b 1
-`;
-  } else {
-    // macOS / Linux stays package-manager-first as before
-    scriptContent = `#!/bin/bash
-set -e
+pause`;
+    } else {
+      scriptContent = `#!/bin/bash
 
 echo "========================================"
-echo "  Audiobook Tools Setup - macOS/Linux"
+echo "    Audiobook Tools Setup - Mac/Linux"
 echo "========================================"
 echo
-echo "This script installs yt-dlp and ffmpeg using your package manager when possible."
+echo "This script will help you install yt-dlp and ffmpeg."
 echo
+echo "Press Enter to continue..."
+read
 
+# Detect OS
 OS="$(uname -s)"
-read -p "Press Enter to continue, or Ctrl+C to cancel..."
 
 echo
 echo "[1/2] Installing yt-dlp..."
-if command -v yt-dlp >/dev/null 2>&1; then
-  echo "yt-dlp already installed."
+
+if command -v yt-dlp &> /dev/null; then
+    echo "yt-dlp is already installed!"
 else
-  if [ "$OS" = "Darwin" ]; then
-    if command -v brew >/dev/null 2>&1; then
-      brew install yt-dlp
+    if [ "$OS" = "Darwin" ]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            echo "Using Homebrew to install yt-dlp..."
+            brew install yt-dlp
+        else
+            echo "Installing via curl..."
+            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+            sudo chmod a+rx /usr/local/bin/yt-dlp
+        fi
     else
-      echo "Homebrew not found. Installing yt-dlp via curl to /usr/local/bin (requires sudo)..."
-      sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-      sudo chmod a+rx /usr/local/bin/yt-dlp
+        # Linux
+        if command -v pip3 &> /dev/null; then
+            echo "Installing via pip..."
+            pip3 install --user yt-dlp
+        else
+            echo "Installing via curl..."
+            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+            sudo chmod a+rx /usr/local/bin/yt-dlp
+        fi
     fi
-  else
-    if command -v apt-get >/dev/null 2>&1; then
-      sudo apt-get update && sudo apt-get install -y yt-dlp
-    elif command -v dnf >/dev/null 2>&1; then
-      sudo dnf install -y yt-dlp
-    elif command -v yum >/dev/null 2>&1; then
-      sudo yum install -y yt-dlp
-    elif command -v pacman >/dev/null 2>&1; then
-      sudo pacman -Sy --noconfirm yt-dlp
-    elif command -v zypper >/dev/null 2>&1; then
-      sudo zypper install -y yt-dlp
-    else
-      echo "No supported package manager detected; installing yt-dlp with pip for this user..."
-      python3 -m pip install --user -U yt-dlp
-      echo "Ensure ~/.local/bin is on your PATH."
-    fi
-  fi
 fi
 
 echo
 echo "[2/2] Installing ffmpeg..."
-if command -v ffmpeg >/dev/null 2>&1; then
-  echo "ffmpeg already installed."
+
+if command -v ffmpeg &> /dev/null; then
+    echo "ffmpeg is already installed!"
 else
-  if [ "$OS" = "Darwin" ]; then
-    if command -v brew >/dev/null 2>&1; then
-      brew install ffmpeg
+    if [ "$OS" = "Darwin" ]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            echo "Using Homebrew to install ffmpeg..."
+            brew install ffmpeg
+        else
+            echo "Please install Homebrew first or download ffmpeg from:"
+            echo "https://evermeet.cx/ffmpeg/"
+            exit 1
+        fi
     else
-      echo "Please install Homebrew (https://brew.sh) or download a static build."
-      exit 1
+        # Linux
+        if command -v apt-get &> /dev/null; then
+            echo "Using apt to install ffmpeg..."
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+        elif command -v yum &> /dev/null; then
+            echo "Using yum to install ffmpeg..."
+            sudo yum install -y ffmpeg
+        elif command -v pacman &> /dev/null; then
+            echo "Using pacman to install ffmpeg..."
+            sudo pacman -S ffmpeg
+        else
+            echo "Please install ffmpeg using your package manager"
+            exit 1
+        fi
     fi
-  else
-    if command -v apt-get >/dev/null 2>&1; then
-      sudo apt-get update && sudo apt-get install -y ffmpeg
-    elif command -v dnf >/dev/null 2>&1; then
-      sudo dnf install -y ffmpeg
-    elif command -v yum >/dev/null 2>&1; then
-      sudo yum install -y ffmpeg
-    elif command -v pacman >/dev/null 2>&1; then
-      sudo pacman -Sy --noconfirm ffmpeg
-    elif command -v zypper >/dev/null 2>&1; then
-      sudo zypper install -y ffmpeg
-    else
-      echo "Please install ffmpeg using your distribution's package manager."
-      exit 1
-    fi
-  fi
 fi
 
 echo
-echo "Verifying tools..."
-yt-dlp --version || true
-ffmpeg -hide_banner -version || true
-
+echo "========================================"
+echo "    Setup Complete!"
+echo "========================================"
 echo
-echo "========================================"
-echo "  Setup Complete!"
-echo "========================================"
+echo "Both yt-dlp and ffmpeg are ready to use!"
 echo "You can now run the audiobook splitter commands."
 echo`;
-  }
+    }
 
-  const blob = new Blob([scriptContent], { type: 'text/plain' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+    const blob = new Blob([scriptContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
-
 
   const downloadBatchFile = () => {
     const parsedChapters = parseTimestamps(timestampInput);
     const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
-    
+
     let scriptContent = '';
-    
+
     if (selectedOS === 'windows') {
       if (parsedChapters.length === 0) {
         // Single file download
@@ -575,14 +491,12 @@ echo "Your chapter files are ready!"`;
     alert('Commands copied to clipboard!');
   };
 
+  // Quick copy helper for one-liners
   const copyLine = (text: string) => {
     navigator.clipboard.writeText(text)
       .then(() => alert('Command copied!'))
       .catch(() => alert('Copy failed. Please copy manually.'));
   };
-
-
-  const parsedChapters = parseTimestamps(timestampInput);
 
   // Easy-install one-liners
   const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp && winget install -e --id FFmpeg.FFmpeg';
@@ -596,13 +510,14 @@ echo "Your chapter files are ready!"`;
   const LNX_PAC   = 'sudo pacman -Sy --noconfirm yt-dlp ffmpeg';
   const LNX_ZYP   = 'sudo zypper install -y yt-dlp ffmpeg';
 
+  const parsedChapters = parseTimestamps(timestampInput);
+
   return (
     <div className={styles.minimalContainer}>
-
       {/* Main View */}
       <div className={styles.mainView}>
         <h1 className={styles.minimalTitle}>audiobook splitter</h1>
-        
+
         {/* Intro */}
         <div className={styles.introbox}>
           <p><strong>welcome!</strong></p>
@@ -611,8 +526,8 @@ echo "Your chapter files are ready!"`;
           <p>open the sidebar for more details!</p>
         </div>
 
-        <input 
-          type="url" 
+        <input
+          type="url"
           value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)}
           placeholder="youtube url"
@@ -644,7 +559,7 @@ echo "Your chapter files are ready!"`;
           <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
         )}
 
-        <button 
+        <button
           onClick={generateCommands}
           disabled={!sourceUrl || !isValidYouTubeUrl(sourceUrl)}
           className={styles.minimalButton}
@@ -656,13 +571,13 @@ echo "Your chapter files are ready!"`;
         {(generatedCommands.windows.length > 0 || generatedCommands.macos.length > 0) && (
           <div className={styles.minimalCommands}>
             <div className={styles.osToggle}>
-              <button 
+              <button
                 className={selectedOS === 'windows' ? styles.osToggleActive : ''}
                 onClick={() => setSelectedOS('windows')}
               >
                 windows
               </button>
-              <button 
+              <button
                 className={selectedOS === 'macos' ? styles.osToggleActive : ''}
                 onClick={() => setSelectedOS('macos')}
               >
@@ -684,73 +599,133 @@ echo "Your chapter files are ready!"`;
         )}
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar (always visible, accordion behavior) */}
       <div className={`${styles.sidebar} ${styles.sidebarOpen}`}>
         <div className={styles.sidebarContent}>
 
-      {/* INFO */}
-      <details open={openSection === 'info'}>
-    <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
-      <h2>info</h2>
-    </summary>
-    <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
-    <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
-    <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+          {/* INFO (collapsed by default) */}
+          <details open={openSection === 'info'}>
+            <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
+              <h2>info</h2>
+            </summary>
+            <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
+            <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+            <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
 
-    <div className={styles.disclaimer} style={{ marginTop: 10 }}>
-      <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
-      <p>make sure that you only use it with content that is legally available for you to download.</p>
-    </div>
-      </details>
+            <div className={styles.disclaimer} style={{ marginTop: 10 }}>
+              <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
+              <p>make sure that you only use it with content that is legally available for you to download.</p>
+            </div>
+          </details>
 
-      <hr />
+          <hr />
 
-      {/* REQUIREMENTS */}
-      <details open={openSection === 'requirements'}>
-    <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
-      <h2>requirements</h2>
-    </summary>
-    <div className={styles.sidebarSection}>
-      <p>you need two command‑line tools:</p>
-      <p><strong>1. yt-dlp</strong> — downloads the audio</p>
-      <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-      <p>install them with your OS package manager for the smoothest experience (see “how to use” for one‑liners).</p>
-      <p>advanced users can also install manually:</p>
-      <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
-      <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
-    </div>
-      </details>
+          {/* REQUIREMENTS */}
+          <details open={openSection === 'requirements'}>
+            <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
+              <h2>requirements</h2>
+            </summary>
+            <div className={styles.sidebarSection}>
+              <p>you need two command‑line tools:</p>
+              <p><strong>1. yt-dlp</strong> — downloads the audio</p>
+              <p><strong>2. ffmpeg</strong> — splits the chapters</p>
+              <p>install them with your OS package manager for the smoothest experience (see “how to use” for one‑liners).</p>
+              <p>advanced users can also install manually:</p>
+              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
+              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
+            </div>
+          </details>
 
-      <hr />
+          <hr />
 
-      {/* HOW TO USE */}
-      <details open={openSection === 'howto'}>
-    <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
-      <h2>how to use</h2>
-    </summary>
-    <div className={styles.sidebarSection}>
-      <h3>steps</h3>
-      <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
-      <p><strong>2.</strong> paste timestamps (from description/comments).</p>
-      <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
-      <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
-      <p><strong>5.</strong> run the commands in a terminal (same folder as the tools).</p>
-      <p><strong>6.</strong> enjoy your mp3 tracks.</p>
-      
-      {/* Supported formats */}
-        <hr />
-        <div className={styles.sidebarSection}>
-    <h3>supported timestamp formats</h3>
-    <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
-    <p>• simple format: 0:00 chapter title</p>
-    <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-      see the webvtt specs for more info and examples
-    </a></p>
+          {/* HOW TO USE */}
+          <details open={openSection === 'howto'}>
+            <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
+              <h2>how to use</h2>
+            </summary>
+            <div className={styles.sidebarSection}>
+              <h3>steps</h3>
+              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
+              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
+              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
+              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
+              <p><strong>5.</strong> run the commands in a terminal.</p>
+              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
+
+              <h3 style={{ marginTop: 15 }}>install via package manager</h3>
+
+              <p><strong>windows</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>winget (recommended)</p>
+                <pre>{WIN_WINGET}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
+                </div>
+
+                <p>chocolatey</p>
+                <pre>{WIN_CHOCO}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_CHOCO)}>copy choco</button>
+                </div>
+
+                <p>scoop</p>
+                <pre>{WIN_SCOOP}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(WIN_SCOOP)}>copy scoop</button>
+                </div>
+              </div>
+
+              <p style={{ marginTop: 15 }}><strong>macos</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>homebrew</p>
+                <pre>{MAC_BREW}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(MAC_BREW)}>copy brew</button>
+                </div>
+              </div>
+
+              <p style={{ marginTop: 15 }}><strong>linux</strong></p>
+              <div className={styles.minimalCommands}>
+                <p>debian/ubuntu</p>
+                <pre>{LNX_APT}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_APT)}>copy apt</button>
+                </div>
+
+                <p>fedora</p>
+                <pre>{LNX_DNF}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
+                </div>
+
+                <p>arch</p>
+                <pre>{LNX_PAC}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_PAC)}>copy pacman</button>
+                </div>
+
+                <p>opensuse</p>
+                <pre>{LNX_ZYP}</pre>
+                <div className={styles.minimalActions}>
+                  <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <hr />
+
+          {/* Supported formats */}
+          <div className={styles.sidebarSection}>
+            <h3>supported timestamp formats</h3>
+            <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
+            <p>• simple format: 0:00 chapter title</p>
+            <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
+              see the webvtt specs for more info and examples
+            </a></p>
+          </div>
+
         </div>
-          
-        </div>
-      </details>
-      </div>
       </div>
     </div>
   );
