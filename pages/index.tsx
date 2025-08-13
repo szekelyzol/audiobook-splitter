@@ -620,7 +620,7 @@ echo "Your chapter files are ready!"`;
 
           <hr />
 
-          {/* REQUIREMENTS */}
+          {/* REQUIREMENTS (now includes package manager one-liners) */}
           <details open={openSection === 'requirements'}>
             <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
               <h2>requirements</h2>
@@ -629,28 +629,7 @@ echo "Your chapter files are ready!"`;
               <p>you need two command‑line tools:</p>
               <p><strong>1. yt-dlp</strong> — downloads the audio</p>
               <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-              <p>install them with your OS package manager for the smoothest experience (see “how to use” for one‑liners).</p>
-              <p>advanced users can also install manually:</p>
-              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
-              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
-            </div>
-          </details>
-
-          <hr />
-
-          {/* HOW TO USE */}
-          <details open={openSection === 'howto'}>
-            <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
-              <h2>how to use</h2>
-            </summary>
-            <div className={styles.sidebarSection}>
-              <h3>steps</h3>
-              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
-              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
-              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
-              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
-              <p><strong>5.</strong> run the commands in a terminal.</p>
-              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
+              <p>install them with your OS package manager for the smoothest experience.</p>
 
               <h3 style={{ marginTop: 15 }}>install via package manager</h3>
 
@@ -693,7 +672,7 @@ echo "Your chapter files are ready!"`;
                 </div>
 
                 <p>fedora</p>
-                <pre>{LNX_DNF}</pre>
+                <pre>{LNC_DNF}</pre>
                 <div className={styles.minimalActions}>
                   <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
                 </div>
@@ -710,20 +689,37 @@ echo "Your chapter files are ready!"`;
                   <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
                 </div>
               </div>
+
+              <p>advanced users can also install manually:</p>
+              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
+              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
             </div>
           </details>
 
           <hr />
 
-          {/* Supported formats */}
-          <div className={styles.sidebarSection}>
-            <h3>supported timestamp formats</h3>
-            <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
-            <p>• simple format: 0:00 chapter title</p>
-            <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-              see the webvtt specs for more info and examples
-            </a></p>
-          </div>
+          {/* HOW TO USE (now includes supported timestamp formats) */}
+          <details open={openSection === 'howto'}>
+            <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
+              <h2>how to use</h2>
+            </summary>
+            <div className={styles.sidebarSection}>
+              <h3>steps</h3>
+              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
+              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
+              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
+              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
+              <p><strong>5.</strong> run the commands in a terminal.</p>
+              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
+
+              <h3 style={{ marginTop: 15 }}>supported timestamp formats</h3>
+              <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
+              <p>• simple format: 0:00 chapter title</p>
+              <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
+                see the webvtt specs for more info and examples
+              </a></p>
+            </div>
+          </details>
 
         </div>
       </div>
