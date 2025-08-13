@@ -686,13 +686,13 @@ echo "Your chapter files are ready!"`;
             
           <details open>
             <summary><h2>info</h2></summary>
-            <p>i created this tool to download and split audiobooks from youtube into separate chapters.</p>
-            <p>you can obviously use it to download and split any kind of audio content from youtube. still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
-            <p>i can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+            <p>I created this tool to download and split audiobooks from youtube into separate chapters.</p>
+            <p>You can obviously use it to download and split any kind of audio content from youtube. Still, the original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+            <p>You can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
             
             <div className={styles.disclaimer} style={{ marginTop: 10 }}>
-              <p><strong>note:</strong> this tool only generates commands that you can use locally on your device. it does not automatically download content from youtube for you, and does not run anything on your device.</p>
-              <p>make sure that you only use it with content that is legally available for you to download.</p>
+              <p><strong>Note:</strong> this tool only generates commands that you can use locally on your device. It does not automatically download content from youtube for you, and does not run anything on your device.</p>
+              <p>Make sure that you only use it with content that is legally available for you to download.</p>
             </div>
           </details>
             
@@ -701,28 +701,10 @@ echo "Your chapter files are ready!"`;
           <details>
             <summary><h2>requirements</h2></summary>
             <div className={styles.sidebarSection}>
-              <p>you need two command‑line tools:</p>
+              <p>You need two command‑line tools:</p>
               <p><strong>1. yt-dlp</strong> — downloads the audio</p>
               <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-              <p>install them with your OS package manager for the smoothest experience (see “how to use” below for one‑liners).</p>
-              <p>advanced users can also install manually:</p>
-              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
-              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
-            </div>
-          </details>
-            
-          <hr />
-            
-          <details>
-            <summary><h2>how to use</h2></summary>
-            <div className={styles.sidebarSection}>
-              <h3>steps</h3>
-              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
-              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
-              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
-              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
-              <p><strong>5.</strong> run the commands in a terminal.</p>
-              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
+              <p>install them with your OS package manager for the smoothest experience.</p>
             
               {/* package‑manager one‑liners only (no script download) */}
               <h3 style={{ marginTop: 15 }}>install via package manager</h3>
@@ -781,6 +763,25 @@ echo "Your chapter files are ready!"`;
                   <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
                 </div>
               </div>
+
+              <p>advanced users can also install manually:</p>
+              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
+              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
+            </div>
+          </details>
+            
+          <hr />
+            
+          <details>
+            <summary><h2>how to use</h2></summary>
+            <div className={styles.sidebarSection}>
+              <h3>steps</h3>
+              <p><strong>1.</strong> paste a youtube url (shorts not supported).</p>
+              <p><strong>2.</strong> paste timestamps (from description/comments).</p>
+              <p><strong>3.</strong> click <em>generate</em> to create commands.</p>
+              <p><strong>4.</strong> make sure <code>yt-dlp</code> and <code>ffmpeg</code> are installed via your package manager.</p>
+              <p><strong>5.</strong> run the commands in a terminal.</p>
+              <p><strong>6.</strong> your mp3 tracks should be ready in the current folder.</p>
             </div>
           </details>
         </div>
