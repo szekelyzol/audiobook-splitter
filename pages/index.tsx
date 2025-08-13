@@ -7,13 +7,10 @@ interface Chapter {
   title: string;
 }
 
-type OSType = 'windows' | 'macos';
-
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
-  const [selectedOS, setSelectedOS] = useState<OSType>('windows');
-  const [generatedCommands, setGeneratedCommands] = useState<{ windows: string[], macos: string[] }>({ windows: [], macos: [] });
+  const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
 
   // Accordion: which sidebar section is open
   const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null); // info collapsed by default
@@ -131,48 +128,27 @@ export default function Home() {
       || 'Untitled_Chapter';
   };
 
-  const generateCommands = () => {
-    const parsedChapters = parseTimestamps(timestampInput);
-    if (!sourceUrl) return;
+    const generateCommands = () => {
+      const parsedChapters = parseTimestamps(timestampInput);
+      if (!sourceUrl) return;
 
-    const windowsCommands: string[] = [];
-    const macosCommands: string[] = [];
+    const commands: string[] = [];
 
     // If no timestamps, just download the full audio
     if (parsedChapters.length === 0) {
-      windowsCommands.push('# Download full audio as single file');
-      windowsCommands.push(`.\\yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
+      commands.push('# Download full audio as single file');
+      commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
 
-      macosCommands.push('# Download full audio as single file');
-      macosCommands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.mp3" "${sourceUrl}"`);
-
-      setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
+      setGeneratedCommands(commands);
       return;
     }
 
-    // Generate Windows commands
-    windowsCommands.push('# Step 1: Download audio from source');
-    windowsCommands.push(`.\\yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
-    windowsCommands.push('');
-    windowsCommands.push('# Step 2: Split audio into chapters');
-    windowsCommands.push('');
-
-    parsedChapters.forEach((chapter, index) => {
-      const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `.\\ffmpeg -i "audiobook.mp3" -ss ${chapter.start}`;
-      if (chapter.end) {
-        cmd += ` -to ${chapter.end}`;
-      }
-      cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
-      windowsCommands.push(cmd);
-    });
-
     // Generate macOS/Linux commands
-    macosCommands.push('# Step 1: Download audio from source');
-    macosCommands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
-    macosCommands.push('');
-    macosCommands.push('# Step 2: Split audio into chapters');
-    macosCommands.push('');
+    commands.push('# Step 1: Download audio from source');
+    commands.push(`yt-dlp -x --audio-format mp3 -o "audiobook.%(ext)s" "${sourceUrl}"`);
+    commands.push('');
+    commands.push('# Step 2: Split audio into chapters');
+    commands.push('');
 
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
@@ -181,313 +157,11 @@ export default function Home() {
         cmd += ` -to ${chapter.end}`;
       }
       cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
-      macosCommands.push(cmd);
+      commands.push(cmd);
     });
 
-    setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
-  };
-
-  const downloadSetupScript = () => {
-    // Existing behavior retained; user flows now prefer package managers via sidebar one-liners.
-    let scriptContent = '';
-
-    if (selectedOS === 'windows') {
-      scriptContent = `@echo off
-echo ========================================
-echo     Audiobook Tools Setup - Windows
-echo ========================================
-echo.
-echo This script will download yt-dlp and ffmpeg for you.
-echo.
-pause
-
-echo.
-echo [1/3] Creating tools folder...
-if not exist "audiobook-tools" mkdir audiobook-tools
-cd audiobook-tools
-
-echo.
-echo [2/3] Downloading yt-dlp...
-curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o yt-dlp.exe
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to download yt-dlp!
-    echo Please download manually from: https://github.com/yt-dlp/yt-dlp/releases
-    pause
-    exit /b 1
-)
-
-echo.
-echo [3/3] Downloading ffmpeg...
-echo Please wait, this may take a few minutes...
-curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to download ffmpeg!
-    echo Please download manually from: https://www.gyan.dev/ffmpeg/builds/
-    pause
-    exit /b 1
-)
-
-echo.
-echo Extracting ffmpeg...
-powershell -NoProfile -Command "Expand-Archive -Path 'ffmpeg.zip' -DestinationPath 'ffmpeg' -Force"
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to extract ffmpeg!
-    echo Please extract manually and copy ffmpeg.exe to this folder
-    pause
-    exit /b 1
-)
-
-echo.
-echo Locating ffmpeg.exe and copying next to yt-dlp.exe...
-for /f "delims=" %%F in ('powershell -NoProfile -Command "(Get-ChildItem -Recurse -Filter ffmpeg.exe -Path ffmpeg | Select-Object -First 1).FullName"') do set "FFMPEG_EXE=%%F"
-if not exist "!FFMPEG_EXE!" (
-    echo ERROR: ffmpeg.exe not found after extraction.
-    echo Please extract manually and copy ffmpeg.exe to this folder
-    pause
-    exit /b 1
-)
-copy /y "!FFMPEG_EXE!" "%CD%\\ffmpeg.exe" >nul
-
-echo.
-echo Cleaning up...
-del ffmpeg.zip
-
-echo.
-echo ========================================
-echo     Setup Complete!
-echo ========================================
-echo.
-echo Your tools are ready in the 'audiobook-tools' folder.
-echo Copy your audiobook commands into this folder and run them!
-echo.
-pause`;
-    } else {
-      scriptContent = `#!/bin/bash
-
-echo "========================================"
-echo "    Audiobook Tools Setup - Mac/Linux"
-echo "========================================"
-echo
-echo "This script will help you install yt-dlp and ffmpeg."
-echo
-echo "Press Enter to continue..."
-read
-
-# Detect OS
-OS="$(uname -s)"
-
-echo
-echo "[1/2] Installing yt-dlp..."
-
-if command -v yt-dlp &> /dev/null; then
-    echo "yt-dlp is already installed!"
-else
-    if [ "$OS" = "Darwin" ]; then
-        # macOS
-        if command -v brew &> /dev/null; then
-            echo "Using Homebrew to install yt-dlp..."
-            brew install yt-dlp
-        else
-            echo "Installing via curl..."
-            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-            sudo chmod a+rx /usr/local/bin/yt-dlp
-        fi
-    else
-        # Linux
-        if command -v pip3 &> /dev/null; then
-            echo "Installing via pip..."
-            pip3 install --user yt-dlp
-        else
-            echo "Installing via curl..."
-            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-            sudo chmod a+rx /usr/local/bin/yt-dlp
-        fi
-    fi
-fi
-
-echo
-echo "[2/2] Installing ffmpeg..."
-
-if command -v ffmpeg &> /dev/null; then
-    echo "ffmpeg is already installed!"
-else
-    if [ "$OS" = "Darwin" ]; then
-        # macOS
-        if command -v brew &> /dev/null; then
-            echo "Using Homebrew to install ffmpeg..."
-            brew install ffmpeg
-        else
-            echo "Please install Homebrew first or download ffmpeg from:"
-            echo "https://evermeet.cx/ffmpeg/"
-            exit 1
-        fi
-    else
-        # Linux
-        if command -v apt-get &> /dev/null; then
-            echo "Using apt to install ffmpeg..."
-            sudo apt-get update && sudo apt-get install -y ffmpeg
-        elif command -v yum &> /dev/null; then
-            echo "Using yum to install ffmpeg..."
-            sudo yum install -y ffmpeg
-        elif command -v pacman &> /dev/null; then
-            echo "Using pacman to install ffmpeg..."
-            sudo pacman -S ffmpeg
-        else
-            echo "Please install ffmpeg using your package manager"
-            exit 1
-        fi
-    fi
-fi
-
-echo
-echo "========================================"
-echo "    Setup Complete!"
-echo "========================================"
-echo
-echo "Both yt-dlp and ffmpeg are ready to use!"
-echo "You can now run the audiobook splitter commands."
-echo`;
-    }
-
-    const blob = new Blob([scriptContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  const downloadBatchFile = () => {
-    const parsedChapters = parseTimestamps(timestampInput);
-    const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
-
-    let scriptContent = '';
-
-    if (selectedOS === 'windows') {
-      if (parsedChapters.length === 0) {
-        // Single file download
-        scriptContent = `@echo off
-echo ========================================
-echo     Audiobook Downloader
-echo ========================================
-echo.
-
-echo Downloading audio as single file...
-${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
-
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Download failed!
-    pause
-    exit /b 1
-)
-
-echo.
-echo ========================================
-echo     Download complete!
-echo ========================================
-echo Your audiobook.mp3 is ready!
-pause`;
-      } else {
-        // Multi-chapter split
-        scriptContent = `@echo off
-echo ========================================
-echo     Audiobook Chapter Splitter
-echo ========================================
-echo.
-
-echo [1/2] Downloading audio...
-${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
-
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Download failed!
-    pause
-    exit /b 1
-)
-
-echo.
-echo [2/2] Splitting into ${parsedChapters.length} chapters...
-${commands
-  .filter(cmd => cmd.includes('ffmpeg'))
-  .join('\n')}
-
-echo.
-echo ========================================
-echo     Processing complete!
-echo ========================================
-echo Your chapter files are ready!
-pause`;
-      }
-    } else {
-      if (parsedChapters.length === 0) {
-        // Single file download
-        scriptContent = `#!/bin/bash
-
-echo "========================================"
-echo "    Audiobook Downloader"
-echo "========================================"
-echo
-
-echo "Downloading audio as single file..."
-${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: Download failed!"
-    exit 1
-fi
-
-echo
-echo "========================================"
-echo "    Download complete!"
-echo "========================================"
-echo "Your audiobook.mp3 is ready!"`;
-      } else {
-        // Multi-chapter split
-        scriptContent = `#!/bin/bash
-
-echo "========================================"
-echo "    Audiobook Chapter Splitter"
-echo "========================================"
-echo
-
-echo "[1/2] Downloading audio..."
-${commands.find(cmd => cmd.includes('yt-dlp')) || ''}
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: Download failed!"
-    exit 1
-fi
-
-echo
-echo "[2/2] Splitting into ${parsedChapters.length} chapters..."
-${commands
-  .filter(cmd => cmd.includes('ffmpeg'))
-  .join('\n')}
-
-echo
-echo "========================================"
-echo "    Processing complete!"
-echo "========================================"
-echo "Your chapter files are ready!"`;
-      }
-    }
-
-    const blob = new Blob([scriptContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedOS === 'windows' ? 'split-audiobook.bat' : 'split-audiobook.sh';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
   const copyCommands = () => {
-    const commands = selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos;
-    navigator.clipboard.writeText(commands.join('\n'));
+    navigator.clipboard.writeText(generatedCommands.join('\n'));
     alert('Commands copied to clipboard!');
   };
 
@@ -504,8 +178,6 @@ echo "Your chapter files are ready!"`;
   const WIN_SCOOP  = 'scoop install yt-dlp ffmpeg';
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
-
-  const parsedChapters = parseTimestamps(timestampInput);
 
   return (
     <div className={styles.minimalContainer}>
@@ -563,32 +235,12 @@ echo "Your chapter files are ready!"`;
         </button>
 
         {/* GENERATED COMMANDS section */}
-        {(generatedCommands.windows.length > 0 || generatedCommands.macos.length > 0) && (
+        {generatedCommands.length > 0 && (
           <div className={styles.minimalCommands}>
-            <div className={styles.osToggle}>
-              <button
-                className={selectedOS === 'windows' ? styles.osToggleActive : ''}
-                onClick={() => setSelectedOS('windows')}
-              >
-                windows
-              </button>
-              <button
-                className={selectedOS === 'macos' ? styles.osToggleActive : ''}
-                onClick={() => setSelectedOS('macos')}
-              >
-                mac/linux
-              </button>
-            </div>
-            <pre>{(selectedOS === 'windows' ? generatedCommands.windows : generatedCommands.macos).join('\n')}</pre>
+            <pre>{generatedCommands.join('\n')}</pre>
             <div className={styles.minimalActions}>
               <button onClick={copyCommands} title="Copy commands to clipboard">copy</button>
-              <button onClick={downloadBatchFile} title="Download audiobook splitting script">
-                .{selectedOS === 'windows' ? 'bat' : 'sh'} audio splitting script
-              </button>
-              <button onClick={downloadSetupScript} title="Download tool installer script">
-                tool setup script
-              </button>
-              <button onClick={() => setGeneratedCommands({ windows: [], macos: [] })} title="Clear everything">reset</button>
+              <button onClick={() => setGeneratedCommands([])} title="Clear everything">reset</button>
             </div>
           </div>
         )}

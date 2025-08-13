@@ -115,23 +115,6 @@
   background: #f5f5f5;
 }
 
-/* Sidebar */
-.sidebarToggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #000;
-  background: #fff;
-  cursor: pointer;
-  z-index: 1001;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .sidebar {
   position: fixed;
   right: -400px;
@@ -230,37 +213,4 @@
   .mainView {
     padding: 60px 15px;
   }
-}
-
-/* OS toggle button */
-
-.osToggle {
-  display: flex;
-  gap: 0;
-  margin-bottom: 15px;
-  border: 1px solid #000;
-  width: fit-content;
-}
-
-.osToggle button {
-  padding: 8px 16px;
-  background: #fff;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  text-transform: lowercase;
-  border-right: 1px solid #000;
-}
-
-.osToggle button:last-child {
-  border-right: none;
-}
-
-.osToggle button:hover {
-  background: #f5f5f5;
-}
-
-.osToggleActive {
-  background: #000 !important;
-  color: #fff;
 }
