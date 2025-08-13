@@ -258,9 +258,9 @@ export default function Home() {
             <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
               <h2>info</h2>
             </summary>
-            <p>This tool is a simple proof of concept experiment. I created it to download audiobooks from youtube and split them into separate chapters.</p>
+            <p>This tool is a simple proof of concept. I created it to download audiobooks from youtube and split them into separate chapters.</p>
             <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
-            <p>You can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
+            <p>You can use the output of this tool with a Yoto, or any device that can play mp3 files.</p>
 
             <div className={styles.disclaimer}>
               <p><strong>Note:</strong> this tool only generates commands that you can use locally on your device. It does not automatically download content from youtube for you, and does not run anything on your device.</p>
@@ -269,11 +269,11 @@ export default function Home() {
           </details>
 
           <hr />
+            
+          <br />
 
           {/* REQUIREMENTS and INSTALLER section */}
           <details open={openSection === 'requirements'}>
-            
-            <br />
 
             <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
               <h2>requirements</h2>
