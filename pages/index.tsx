@@ -258,7 +258,7 @@ export default function Home() {
             <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
               <h2>info</h2>
             </summary>
-            <p>I created this tool as a tech experiment to download audiobooks from youtube and split them into separate chapters.</p>
+            <p>This tool is a simple proof of concept experiment. I created it to download audiobooks from youtube and split them into separate chapters.</p>
             <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
             <p>You can use the output of this tool with a Yoto, or any similar device that plays mp3 files.</p>
 
