@@ -18,17 +18,15 @@ export default function Home() {
     setOpenSection(prev => (prev === key ? null : key));
   };
 
-  const isValidYouTubeUrl = (url: string): boolean => {
-    if (!url) return false;
-    const patterns = [
-      /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/,
-      /^https?:\/\/youtu\.be\/[\w-]+/,
-      /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/,
-      /^https?:\/\/m\.youtube\.com\/watch\?v=[\w-]+/,
-      /^https?:\/\/(www\.)?youtube-nocookie\.com\/embed\/[\w-]+/,
-      /^https?:\/\/(www\.)?youtube\.com\/v\/[\w-]+/
-    ];
-    return patterns.some(pattern => pattern.test(url));
+  const isValidYouTubeUrl = (raw: string): boolean => {
+  const url = raw.trim();
+  const re = /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/watch\?v=[\w-]+|youtu\.be\/[\w-]+|youtube\.com\/embed\/[\w-]+|youtube-nocookie\.com\/embed\/[\w-]+|youtube\.com\/v\/[\w-]+)$/i;
+  return re.test(url);
+  };
+
+  const normalizeYouTubeUrl = (raw: string): string => {
+  const url = raw.trim();
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   };
 
   const parseTimestamps = (input: string): Chapter[] => {
@@ -129,6 +127,7 @@ export default function Home() {
   };
 
     const generateCommands = () => {
+      const url = normalizeYouTubeUrl(sourceUrl);
       if (!sourceUrl) return;
     
       const commands: string[] = [];
@@ -136,7 +135,7 @@ export default function Home() {
     // If no timestamps are added, just download the full audio
     if (parsedChapters.length === 0) {
       commands.push('# Download full audio as single file');
-      commands.push(`yt-dlp -x --audio-format mp3 -o "audio.mp3" "${sourceUrl}"`);
+      commands.push(`yt-dlp -x --audio-format mp3 -o "audio.mp3" "${url}"`);
 
       setGeneratedCommands(commands);
       return;
@@ -144,7 +143,7 @@ export default function Home() {
 
     // Generate commands
     commands.push('# Step 1: Download audio from source');
-    commands.push(`yt-dlp -x --audio-format mp3 -o "audio.%(ext)s" "${sourceUrl}"`);
+    commands.push(`yt-dlp -x --audio-format mp3 -o "audio.%(ext)s" "${url}"`);
     commands.push('');
     commands.push('# Step 2: Split audio into chapters');
     commands.push('');
