@@ -192,166 +192,254 @@ export default function Home() {
     setGeneratedCommands({ windows: windowsCommands, macos: macosCommands });
   };
 
-  const downloadSetupScript = () => {
-    let scriptContent = '';
-    
-    if (selectedOS === 'windows') {
-      scriptContent = `@echo off
-echo ========================================
-echo     Audiobook Tools Setup - Windows
-echo ========================================
-echo.
-echo This script will download yt-dlp and ffmpeg for you.
-echo.
-pause
+// Replace downloadSetupScript() in pages/index.tsx
+const downloadSetupScript = () => {
+  let scriptContent = '';
 
-echo.
-echo [1/3] Creating tools folder...
-if not exist "audiobook-tools" mkdir audiobook-tools
-cd audiobook-tools
+  if (selectedOS === 'windows') {
+    // Windows: prefer winget -> choco -> scoop, then fallback to local install (no admin)
+    scriptContent = `@echo off
+setlocal ENABLEDELAYEDEXPANSION
 
+echo ========================================
+echo   Audiobook Tools Setup - Windows
+echo ========================================
 echo.
-echo [2/3] Downloading yt-dlp...
+echo This script installs yt-dlp and ffmpeg using a package manager when possible.
+echo Order: winget -> chocolatey -> scoop -> local (no admin).
+echo.
+
+:: Create a working folder for local fallback
+set "TOOLS_DIR=%CD%\\audiobook-tools"
+if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
+
+:: Helper: verify commands
+where yt-dlp >nul 2>&1 && set HAD_YTDLP=1
+where ffmpeg >nul 2>&1 && set HAD_FFMPEG=1
+
+:: ------------------------------------------------
+:: 1) Try winget (preferred)
+:: ------------------------------------------------
+where winget >nul 2>&1
+if %ERRORLEVEL%==0 (
+  echo [winget] attempting to install yt-dlp and ffmpeg...
+  call :winget_try_install yt-dlp.yt-dlp yt-dlp
+  call :winget_try_install FFmpeg.FFmpeg ffmpeg
+  if not defined HAD_YTDLP (where yt-dlp >nul 2>&1) && if not defined HAD_FFMPEG (where ffmpeg >nul 2>&1) (
+    echo [winget] install looks good.
+    goto :verify
+  )
+) else (
+  echo [winget] not found.
+)
+
+:: ------------------------------------------------
+:: 2) Try Chocolatey
+:: ------------------------------------------------
+where choco >nul 2>&1
+if %ERRORLEVEL%==0 (
+  echo [choco] attempting to install packages (may require elevation)...
+  choco install -y yt-dlp ffmpeg
+  if %ERRORLEVEL%==0 goto :verify
+) else (
+  echo [choco] not found.
+)
+
+:: ------------------------------------------------
+:: 3) Try Scoop
+:: ------------------------------------------------
+where scoop >nul 2>&1
+if %ERRORLEVEL%==0 (
+  echo [scoop] attempting to install buckets/packages...
+  :: ensure main bucket exists (usually default)
+  scoop bucket add main >nul 2>&1
+  scoop install yt-dlp ffmpeg
+  if %ERRORLEVEL%==0 goto :verify
+) else (
+  echo [scoop] not found.
+)
+
+:: ------------------------------------------------
+:: 4) Local fallback (no admin, portable binaries)
+:: ------------------------------------------------
+echo [fallback] performing local no-admin install into:
+echo   %TOOLS_DIR%
+pushd "%TOOLS_DIR%"
+
+echo   - downloading yt-dlp.exe ...
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o yt-dlp.exe
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to download yt-dlp!
-    echo Please download manually from: https://github.com/yt-dlp/yt-dlp/releases
-    pause
-    exit /b 1
+  echo ERROR: failed to download yt-dlp
+  popd & goto :fail
 )
 
-echo.
-echo [3/3] Downloading ffmpeg...
-echo Please wait, this may take a few minutes...
+echo   - downloading ffmpeg (release essentials) ...
 curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to download ffmpeg!
-    echo Please download manually from: https://www.gyan.dev/ffmpeg/builds/
-    pause
-    exit /b 1
+  echo ERROR: failed to download ffmpeg
+  popd & goto :fail
 )
 
-echo.
-echo Extracting ffmpeg...
-tar -xf ffmpeg.zip --strip-components=1 --wildcards "*/bin/ffmpeg.exe"
+echo   - extracting ffmpeg with PowerShell Expand-Archive ...
+powershell -NoProfile -Command "Expand-Archive -Path 'ffmpeg.zip' -DestinationPath 'ffmpeg' -Force"
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to extract ffmpeg!
-    echo Please extract manually and copy ffmpeg.exe to this folder
-    pause
-    exit /b 1
+  echo ERROR: failed to extract ffmpeg.zip
+  popd & goto :fail
 )
 
+for /f "delims=" %%F in ('powershell -NoProfile -Command "(Get-ChildItem -Recurse -Filter ffmpeg.exe -Path ffmpeg | Select-Object -First 1).FullName"') do set "FFMPEG_EXE=%%F"
+if not exist "!FFMPEG_EXE!" (
+  echo ERROR: could not locate ffmpeg.exe after extraction
+  popd & goto :fail
+)
+copy /y "!FFMPEG_EXE!" "%TOOLS_DIR%\\ffmpeg.exe" >nul
+del /q ffmpeg.zip >nul 2>&1
+popd
+
+:: Temporarily add to PATH for this session
+set "PATH=%TOOLS_DIR%;%PATH%"
+
+:verify
 echo.
-echo Cleaning up...
-del ffmpeg.zip
+echo Verifying tools on PATH:
+yt-dlp --version || echo (yt-dlp not on PATH)
+ffmpeg -hide_banner -version || echo (ffmpeg not on PATH)
 
 echo.
 echo ========================================
-echo     Setup Complete!
+echo   Setup Complete!
 echo ========================================
+echo If commands still aren't found, restart your terminal or add the tool location to PATH.
 echo.
-echo Your tools are ready in the 'audiobook-tools' folder.
-echo Copy your audiobook commands into this folder and run them!
+echo Windows package managers can require elevation; run this in an elevated terminal if prompted.
 echo.
-pause`;
-    } else {
-      scriptContent = `#!/bin/bash
+pause
+exit /b 0
+
+:: --------------- helper labels -----------------
+:winget_try_install
+REM %1 = winget package id to try, %2 = binary to verify
+set "PKGID=%~1"
+set "BINARY=%~2"
+winget install --silent --accept-package-agreements --accept-source-agreements -e --id "%PKGID%"
+where "%BINARY%" >nul 2>&1
+exit /b 0
+
+:fail
+echo.
+echo ========================================
+echo   Setup FAILED
+echo ========================================
+echo You can try running this window as Administrator, or install a package manager:
+echo   - winget: Microsoft Store "App Installer"
+echo   - Chocolatey: https://chocolatey.org/install
+echo   - Scoop: https://scoop.sh
+echo Or use the local fallback above manually.
+echo.
+pause
+exit /b 1
+`;
+  } else {
+    // macOS / Linux stays package-manager-first as before
+    scriptContent = `#!/bin/bash
+set -e
 
 echo "========================================"
-echo "    Audiobook Tools Setup - Mac/Linux"
+echo "  Audiobook Tools Setup - macOS/Linux"
 echo "========================================"
 echo
-echo "This script will help you install yt-dlp and ffmpeg."
+echo "This script installs yt-dlp and ffmpeg using your package manager when possible."
 echo
-echo "Press Enter to continue..."
-read
 
-# Detect OS
 OS="$(uname -s)"
+read -p "Press Enter to continue, or Ctrl+C to cancel..."
 
 echo
 echo "[1/2] Installing yt-dlp..."
-
-if command -v yt-dlp &> /dev/null; then
-    echo "yt-dlp is already installed!"
+if command -v yt-dlp >/dev/null 2>&1; then
+  echo "yt-dlp already installed."
 else
-    if [ "$OS" = "Darwin" ]; then
-        # macOS
-        if command -v brew &> /dev/null; then
-            echo "Using Homebrew to install yt-dlp..."
-            brew install yt-dlp
-        else
-            echo "Installing via curl..."
-            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-            sudo chmod a+rx /usr/local/bin/yt-dlp
-        fi
+  if [ "$OS" = "Darwin" ]; then
+    if command -v brew >/dev/null 2>&1; then
+      brew install yt-dlp
     else
-        # Linux
-        if command -v pip3 &> /dev/null; then
-            echo "Installing via pip..."
-            pip3 install --user yt-dlp
-        else
-            echo "Installing via curl..."
-            sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-            sudo chmod a+rx /usr/local/bin/yt-dlp
-        fi
+      echo "Homebrew not found. Installing yt-dlp via curl to /usr/local/bin (requires sudo)..."
+      sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+      sudo chmod a+rx /usr/local/bin/yt-dlp
     fi
+  else
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update && sudo apt-get install -y yt-dlp
+    elif command -v dnf >/dev/null 2>&1; then
+      sudo dnf install -y yt-dlp
+    elif command -v yum >/dev/null 2>&1; then
+      sudo yum install -y yt-dlp
+    elif command -v pacman >/dev/null 2>&1; then
+      sudo pacman -Sy --noconfirm yt-dlp
+    elif command -v zypper >/dev/null 2>&1; then
+      sudo zypper install -y yt-dlp
+    else
+      echo "No supported package manager detected; installing yt-dlp with pip for this user..."
+      python3 -m pip install --user -U yt-dlp
+      echo "Ensure ~/.local/bin is on your PATH."
+    fi
+  fi
 fi
 
 echo
 echo "[2/2] Installing ffmpeg..."
-
-if command -v ffmpeg &> /dev/null; then
-    echo "ffmpeg is already installed!"
+if command -v ffmpeg >/dev/null 2>&1; then
+  echo "ffmpeg already installed."
 else
-    if [ "$OS" = "Darwin" ]; then
-        # macOS
-        if command -v brew &> /dev/null; then
-            echo "Using Homebrew to install ffmpeg..."
-            brew install ffmpeg
-        else
-            echo "Please install Homebrew first or download ffmpeg from:"
-            echo "https://evermeet.cx/ffmpeg/"
-            exit 1
-        fi
+  if [ "$OS" = "Darwin" ]; then
+    if command -v brew >/dev/null 2>&1; then
+      brew install ffmpeg
     else
-        # Linux
-        if command -v apt-get &> /dev/null; then
-            echo "Using apt to install ffmpeg..."
-            sudo apt-get update && sudo apt-get install -y ffmpeg
-        elif command -v yum &> /dev/null; then
-            echo "Using yum to install ffmpeg..."
-            sudo yum install -y ffmpeg
-        elif command -v pacman &> /dev/null; then
-            echo "Using pacman to install ffmpeg..."
-            sudo pacman -S ffmpeg
-        else
-            echo "Please install ffmpeg using your package manager"
-            exit 1
-        fi
+      echo "Please install Homebrew (https://brew.sh) or download a static build."
+      exit 1
     fi
+  else
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update && sudo apt-get install -y ffmpeg
+    elif command -v dnf >/dev/null 2>&1; then
+      sudo dnf install -y ffmpeg
+    elif command -v yum >/dev/null 2>&1; then
+      sudo yum install -y ffmpeg
+    elif command -v pacman >/dev/null 2>&1; then
+      sudo pacman -Sy --noconfirm ffmpeg
+    elif command -v zypper >/dev/null 2>&1; then
+      sudo zypper install -y ffmpeg
+    else
+      echo "Please install ffmpeg using your distribution's package manager."
+      exit 1
+    fi
+  fi
 fi
 
 echo
-echo "========================================"
-echo "    Setup Complete!"
-echo "========================================"
+echo "Verifying tools..."
+yt-dlp --version || true
+ffmpeg -hide_banner -version || true
+
 echo
-echo "Both yt-dlp and ffmpeg are ready to use!"
+echo "========================================"
+echo "  Setup Complete!"
+echo "========================================"
 echo "You can now run the audiobook splitter commands."
 echo`;
-    }
+  }
 
-    const blob = new Blob([scriptContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  const blob = new Blob([scriptContent], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = selectedOS === 'windows' ? 'setup-tools.bat' : 'setup-tools.sh';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
   };
+
 
   const downloadBatchFile = () => {
     const parsedChapters = parseTimestamps(timestampInput);
@@ -484,7 +572,26 @@ echo "Your chapter files are ready!"`;
     alert('Commands copied to clipboard!');
   };
 
+  const copyLine = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => alert('Command copied!'))
+      .catch(() => alert('Copy failed. Please copy manually.'));
+  };
+
+
   const parsedChapters = parseTimestamps(timestampInput);
+
+  // Easy-install one-liners
+  const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp && winget install -e --id FFmpeg.FFmpeg';
+  const WIN_CHOCO  = 'choco install -y yt-dlp ffmpeg';
+  const WIN_SCOOP  = 'scoop install yt-dlp ffmpeg';
+
+  const MAC_BREW  = 'brew install yt-dlp ffmpeg';
+
+  const LNX_APT   = 'sudo apt-get update && sudo apt-get install -y yt-dlp ffmpeg';
+  const LNX_DNF   = 'sudo dnf install -y yt-dlp ffmpeg';
+  const LNX_PAC   = 'sudo pacman -Sy --noconfirm yt-dlp ffmpeg';
+  const LNX_ZYP   = 'sudo zypper install -y yt-dlp ffmpeg';
 
   return (
     <div className={styles.minimalContainer}>
@@ -608,6 +715,75 @@ echo "Your chapter files are ready!"`;
           <hr></hr>
 
           {/* Requirements */}
+
+          <hr />
+
+          <div className={styles.sidebarSection}>
+            <h3>easy install (recommended)</h3>
+            <p>copy one of the commands below into your terminal. these install both <code>yt-dlp</code> and <code>ffmpeg</code>.</p>
+
+            <p><strong>windows</strong></p>
+            <div className={styles.minimalCommands}>
+              <p>winget (preferred on Windows 10/11)</p>
+              <pre>{WIN_WINGET}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(WIN_WINGET)}>copy winget</button>
+              </div>
+
+              <p>chocolatey</p>
+              <pre>{WIN_CHOCO}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(WIN_CHOCO)}>copy choco</button>
+              </div>
+
+              <p>scoop</p>
+              <pre>{WIN_SCOOP}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(WIN_SCOOP)}>copy scoop</button>
+              </div>
+            </div>
+
+            <p style={{ marginTop: 15 }}><strong>macos</strong></p>
+            <div className={styles.minimalCommands}>
+              <p>homebrew</p>
+              <pre>{MAC_BREW}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(MAC_BREW)}>copy brew</button>
+              </div>
+            </div>
+
+            <p style={{ marginTop: 15 }}><strong>linux</strong></p>
+            <div className={styles.minimalCommands}>
+              <p>debian/ubuntu</p>
+              <pre>{LNX_APT}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(LNX_APT)}>copy apt</button>
+              </div>
+
+              <p>fedora</p>
+              <pre>{LNX_DNF}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(LNX_DNF)}>copy dnf</button>
+              </div>
+
+              <p>arch</p>
+              <pre>{LNX_PAC}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(LNX_PAC)}>copy pacman</button>
+              </div>
+
+              <p>opensuse</p>
+              <pre>{LNX_ZYP}</pre>
+              <div className={styles.minimalActions}>
+                <button onClick={() => copyLine(LNX_ZYP)}>copy zypper</button>
+              </div>
+            </div>
+
+            <div className={styles.disclaimer} style={{ marginTop: 15 }}>
+              <p><strong>note:</strong> if a package manager is not available or needs admin rights, you can use the <em>tool setup script</em> button on the main page — it can do a local, no‑admin install on windows and uses package managers on mac/linux.</p>
+            </div>
+          </div>
+
           <div className={styles.sidebarSection}>
             <h3>required tools</h3>
             <p><strong>1. yt-dlp - downloads audio</strong></p>
