@@ -12,12 +12,13 @@ export default function Home() {
   const [timestampInput, setTimestampInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
 
-  // Accordion: which sidebar section is open?
+  // Accordion: check which sidebar section is open
   const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null);
   const toggleSection = (key: 'info' | 'requirements' | 'howto') => {
     setOpenSection(prev => (prev === key ? null : key));
   };
 
+  // Validate youtube URL
   const isValidYouTubeUrl = (raw: string): boolean => {
   const url = raw.trim();
   const re = /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/watch\?v=[\w-]+|youtu\.be\/[\w-]+|youtube\.com\/embed\/[\w-]+|youtube-nocookie\.com\/embed\/[\w-]+|youtube\.com\/v\/[\w-]+)$/i;
@@ -29,6 +30,7 @@ export default function Home() {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   };
 
+  // Parse and validate timestamps. This includes WEBVTT and simple timestamp formats, and some pretty robust edge case validation.
   const parseTimestamps = (input: string): Chapter[] => {
     if (!input.trim()) return [];
 
@@ -46,7 +48,7 @@ export default function Home() {
       if (line.includes('-->')) {
         const [start, end = ''] = line.split('-->').map(part => part.trim());
 
-        // Peek at next line; if it's another cue or blank, treat as untitled
+        // Peek at next line; if it's another cue or blank, treat as untitled.
         const next = (lines[i + 1] ?? '').trim();
         const isNextCue = next.includes('-->');
         const hasTitle = next.length > 0 && !isNextCue;
@@ -59,7 +61,7 @@ export default function Home() {
           title: sanitizeTitle(titleCandidate),
         });
 
-        // Only skip the next line if it was a real title
+        // Only skip the next line if it was a real title.
         if (hasTitle) i++;
       }
       else if (line.match(/(\d+:[\d:]+)|(\d+\.\s)|(\d+:\s)|(Chapter\s+\d+)/i)) {
@@ -108,7 +110,7 @@ export default function Home() {
       }
     }
 
-    // Fill missing end times with next chapter's start
+    // Fill missing end times with next chapter's start.
     for (let i = 0; i < chapters.length - 1; i++) {
       if (!chapters[i].end) {
         chapters[i].end = chapters[i + 1].start;
@@ -160,7 +162,7 @@ export default function Home() {
     
       const commands: string[] = [];
 
-    // If no timestamps are added, just download the full audio
+    // If no timestamps are added, just download the full audio.
     if (parsedChapters.length === 0) {
       commands.push('# Download full audio as single file');
       commands.push(`yt-dlp -x --audio-format mp3 -o "audio.mp3" "${url}"`);
@@ -209,7 +211,7 @@ export default function Home() {
   // Trim timestamps
   const hasTimestamps = timestampInput.trim().length > 0;
 
-  // compute once per render for UI messages
+  // Compute once per render for UI messages
   const parsedChapters = parseTimestamps(timestampInput);
 
   return (
@@ -365,18 +367,53 @@ export default function Home() {
               <p><strong>5.</strong> Run the generated commands in a terminal.</p>
               <p><strong>6.</strong> Your mp3 tracks should be ready in the current folder.</p>
 
-          {/* TIMESTAMP FORMAT section */}
+              {/* TIMESTAMP FORMAT section */}
 
-            <br />
+              <br />
 
-            <div className={styles.disclaimer}>
-              <h3>supported timestamp formats</h3>
-              <p>• standard webvtt: 00:00:00 --&gt; 00:24:54</p>
-              <p>• simple format: 0:00 chapter title</p>
-              <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-                See the webvtt specs for more info and examples.
-              </a></p>
-            </div>
+              <h3>notes about timestamps</h3>
+
+                <div className={styles.disclaimer}>
+                  <p>Timestamps are important, so read this!</p>
+                </div>
+              
+                <p>This tool supports the most common timestamp formats:</p>
+                <p>• Standard WEBVTT:</p>
+                
+                <div className={styles.minimalCommands}>
+                  <pre>
+                    <p>WEBVTT</p>
+                    <p>00:00:00 --&gt; 00:04:35</p>
+                    <p>Title 1</p>
+                    <p>00:04:35 --&gt; 00:09:21</p>
+                    <p>Title 2</p>
+                    <p>00:09:21 --&gt; 00:12:08</p>
+                    <p>Title 3</p>
+                  </pre>
+                    <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
+                      See the WEBVTT specs for more info and examples.
+                    </a></p>
+                </div>
+
+                <p>• Simple format, with start times only:</p>
+                
+                <div className={styles.minimalCommands}>
+                  <pre>
+                    <p>00:00 Title 1</p>
+                    <p>04:35 Title 2</p>
+                    <p>09:21 Title 3</p>
+                  </pre>
+                </div>
+
+                <p>• Inverse simple format, with start times only:</p>
+                
+                <div className={styles.minimalCommands}>
+                  <pre>
+                    <p>Title 1 00:00</p>
+                    <p>Title 2 04:35</p>
+                    <p>Title 3 09:21</p>
+                  </pre>
+                </div>
             </div>
           </details>
         </div>
