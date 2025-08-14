@@ -290,7 +290,7 @@ export default function Home() {
               <h2>info</h2>
             </summary>
             <p>This tool is a simple proof of concept. I created it to download audiobooks from youtube and split them into separate chapters.</p>
-            <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent who has a daughter that finishes audiobooks at an unreasonable pace.</p>
+            <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent, whose daughter finishes audiobooks at an unreasonable pace.</p>
             <p>You can use the output of this tool with a Yoto, or any device that can play mp3 files.</p>
 
             <div className={styles.disclaimer}>
