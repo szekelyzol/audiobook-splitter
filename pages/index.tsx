@@ -175,16 +175,9 @@ export default function Home() {
     commands.push('# Step 1: Download audio from source');
     commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.%(ext)s" "${url}"`);
     commands.push('');
-    commands.push('# Step 2: Prepare output folder with auto-increment if needed');
-    commands.push('set "outdir=output"');
-    commands.push('set /a n=1');
-    commands.push(':checkfolder');
-    commands.push('if exist "%outdir%" (');
-    commands.push('  set /a n+=1');
-    commands.push('  set "outdir=output_%n%"');
-    commands.push('  goto checkfolder');
-    commands.push(')');
-    commands.push('mkdir "%outdir%"');
+    commands.push('# Step 2: Make a unique output folder with date-timestamp');
+    const folderName = `output_${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}`;
+    commands.push(`mkdir "${folderName}"`);
     commands.push('');
     commands.push('# Step 3: Split audio into chapters');
     commands.push('');
@@ -195,7 +188,7 @@ export default function Home() {
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
-      cmd += ` -c copy "%outdir%/${paddedIndex}_${chapter.title}.mp3"`;
+      cmd += ` -c copy "${folderName}/${paddedIndex}_${chapter.title}.mp3"`;
       commands.push(cmd);
     });
 
