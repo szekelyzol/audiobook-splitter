@@ -380,7 +380,8 @@ export default function Home() {
               <h3>timestamp examples</h3>
 
                 <div className={styles.disclaimer}>
-                  <p>This tool supports some common timestamp formats. Timestamps formatting is important, so make sure you get them right. Check the troubleshooting section if you encounter any issues.</p>
+                  <p>This tool supports some common timestamp formats. Timestamps formatting is important, so make sure you get them right.</p>
+                  <p>Check the troubleshooting section if you encounter any issues.</p>
                 </div>
 
                 <p><strong>Standard WEBVTT:</strong></p>
@@ -419,17 +420,6 @@ export default function Home() {
                     <p>Title 3 09:21</p>
                   </pre>
                 </div>
-
-                <div className={styles.disclaimer}>
-                  <p>Timestamps are important, so make sure you get them right. The tool validates your input to help you avoid some common issues:</p>
-                  <ul>
-                   <li>Missing chapter names or titles will automatically create <em>Untitled</em> files.</li>
-                   <li>Leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed.</li>
-                   <li>Illegal filename characters, spaces, underscores, etc. are trimmed.</li>
-                  </ul>
-                  <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
-                </div>
-
             </div>
           </details>
 
@@ -444,17 +434,16 @@ export default function Home() {
             </summary>
             <div className={styles.sidebarSection}>
 
-              <h3>need help?</h3>
+              <h3>notes on validation</h3>
 
-              <div className={styles.disclaimer}>
-                  <p>The tool validates your input to help you avoid some common issues:</p>
-                  <ul>
-                   <li>Missing chapter names or titles will automatically create <em>Untitled</em> files.</li>
-                   <li>Leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed.</li>
-                   <li>Illegal filename characters, spaces, underscores, etc. are trimmed.</li>
-                  </ul>
-                  <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
-              </div>
+              <p>The tool validates your input to help you avoid some common issues:</p>
+              <p>• missing chapter names or titles will automatically create <em>Untitled</em> files</p>
+              <p>• leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed </p>
+              <p>• illegal filename characters, spaces, underscores, etc. are trimmed</p>
+            
+              <br />
+
+              <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
             </div>
           </details>
         </div>
