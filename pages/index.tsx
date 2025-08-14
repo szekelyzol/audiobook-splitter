@@ -45,14 +45,22 @@ export default function Home() {
 
       if (line.includes('-->')) {
         const [start, end = ''] = line.split('-->').map(part => part.trim());
-        const title = lines[i + 1]?.trim() || `Chapter ${chapters.length + 1}`;
+
+        // Peek at next line; if it's another cue or blank, treat as untitled
+        const next = (lines[i + 1] ?? '').trim();
+        const isNextCue = next.includes('-->');
+        const hasTitle = next.length > 0 && !isNextCue;
+
+        const titleCandidate = hasTitle ? next : '';
 
         chapters.push({
           start: normalizeTimestamp(start),
           end: normalizeTimestamp(end),
-          title: sanitizeTitle(title)
+          title: sanitizeTitle(titleCandidate),
         });
-        i++;
+
+        // Only skip the next line if it was a real title
+        if (hasTitle) i++;
       }
       else if (line.match(/(\d+:[\d:]+)|(\d+\.\s)|(\d+:\s)|(Chapter\s+\d+)/i)) {
         const timeMatch = line.match(/(\d+:[\d:]+)/);
