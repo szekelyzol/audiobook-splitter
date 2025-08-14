@@ -408,11 +408,7 @@ export default function Home() {
                 <p><strong>Inverse simple format, with start times only:</strong></p>
                 
                 <div className={styles.minimalCommands}>
-                  <pre>
-                    Title 1 00:00
-                    Title 2 04:35
-                    Title 3 09:21
-                  </pre>
+                  <pre>Title 1 00:00\nTitle 2 04:35\nTitle 3 09:21</pre>
                 </div>
 
                 <div className={styles.disclaimer}>
