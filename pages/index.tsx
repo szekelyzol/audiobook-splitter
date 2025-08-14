@@ -60,17 +60,22 @@ export default function Home() {
         let start = '';
 
         if (timeMatch) {
-          start = normalizeTimestamp(timeMatch[1]);
-          title = line.replace(timeMatch[0], '').replace(/[-–—]/g, '').trim();
+        start = normalizeTimestamp(timeMatch[1]);
+
+        // everything after the matched time
+        const afterTime = line.slice(line.indexOf(timeMatch[0]) + timeMatch[0].length);
+          title = afterTime.replace(/[-–—]/g, '').trim(); // may be ''
         } else {
-          const chapterMatch = line.match(/Chapter\s+(\d+)/i);
-          if (chapterMatch) {
-            title = line;
-            start = '00:00:00';
+        const chapterMatch = line.match(/Chapter\s+(\d+)/i);
+        if (chapterMatch) {
+        // keep as-is if you want to support lines like "Chapter 3" with no time
+          title = line;
+          start = '00:00:00';
           }
         }
 
-        if (start && title) {
+        // NOTE: push even if title is empty; sanitizeTitle('') -> 'Untitled'
+         if (start) {
           chapters.push({
             start,
             end: '',
@@ -104,27 +109,27 @@ export default function Home() {
   };
 
   const sanitizeTitle = (title: string): string => {
-    if (!title || title.trim() === '') {
-      return 'Untitled_Chapter';
-    }
+    if (!title || title.trim() === '') return 'Untitled';
 
+    // 1) Keep the word "chapter" intact in chapter titles, do not strip it.
+    // 2) Still strip simple numbered bullets like "1. " at the start.
     let cleaned = title
-      .replace(/^Chapter\s+\d+:?\s*/i, '')
-      .replace(/^\d+\.\s*/, '')
-      .trim();
+    // Remove leading "1. ", "12. ", "3) ", "4 - " patterns.
+    .replace(/^\s*\d+\s*([.)-]\s*|\s+-\s*)/, '')
+    .trim();
 
-    if (!cleaned || /^\d+$/.test(cleaned)) {
-      cleaned = title.trim();
-    }
+    // If stripping made it empty or just digits, fall back to the original full title
+    if (!cleaned || /^\d+$/.test(cleaned)) cleaned = title.trim();
 
+    // Final filesystem-safe normalization
     return cleaned
-      .replace(/[<>:"/\\|?*]/g, '_')
-      .replace(/\s+/g, '_')
-      .replace(/_{2,}/g, '_')
-      .replace(/^_|_$/g, '')
-      .substring(0, 50)
-      || 'Untitled_Chapter';
+    .replace(/[<>:"/\\|?*]/g, '_')     // illegal filename chars
+    .replace(/\s+/g, '_')              // spaces -> underscores
+    .replace(/_{2,}/g, '_')            // collapse multiple underscores
+    .replace(/^_|_$/g, '')             // trim leading/trailing underscores
+    .substring(0, 50) || 'Untitled';
   };
+
 
     const generateCommands = () => {
       const url = normalizeYouTubeUrl(sourceUrl);
