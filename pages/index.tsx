@@ -175,7 +175,21 @@ export default function Home() {
     commands.push('# Step 1: Download audio from source');
     commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.%(ext)s" "${url}"`);
     commands.push('');
-    commands.push('# Step 2: Make a unique output folder with date-timestamp');
+
+    commands.push('# Quick check: can ffmpeg open the downloaded file?');
+    commands.push('# If the command below prints an error (e.g. "No such file or directory"),');
+    commands.push('# your link may be invalid/truncated or you ran out of disk space.');
+    commands.push('# Check and fix the URL or free up space, then re-run the script.');
+    commands.push('ffmpeg -v error -i "full-audio.mp3" -t 1 -f null -');
+    commands.push('');
+    
+    // commands.push('# Step 2: Verify download succeeded');
+    // commands.push('dir "full-audio.mp3"');
+    // commands.push('# If the file is not listed above, your URL may be invalid or truncated.');
+    // commands.push('# Fix the URL and re-run Step 1. Do NOT run the split commands until the file exists.');
+    // commands.push('');
+    
+    commands.push('# Step 3: Make a unique output folder with date-timestamp');
     const folderName = `output_${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}`;
     commands.push(`mkdir "${folderName}"`);
     commands.push('');
