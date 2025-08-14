@@ -372,15 +372,9 @@ export default function Home() {
               <br />
 
               <h3>notes about timestamps</h3>
-
-                <div className={styles.disclaimer}>
-                  <p>Timestamps are important, so read this!</p>
-                </div>
-
-              <br />
               
-                <p>This tool supports the most common timestamp formats:</p>
-                <p>• Standard WEBVTT:</p>
+                <p>This tool supports some common timestamp formats.</p>
+                <p><strong>Standard WEBVTT:</strong></p>
                 
                 <div className={styles.minimalCommands}>
                   <pre>
@@ -397,7 +391,7 @@ export default function Home() {
                     </a></p>
                 </div>
 
-                <p>• Simple format, with start times only:</p>
+                <p><strong>Simple format, with start times only:</strong></p>
                 
                 <div className={styles.minimalCommands}>
                   <pre>
@@ -407,7 +401,7 @@ export default function Home() {
                   </pre>
                 </div>
 
-                <p>• Inverse simple format, with start times only:</p>
+                <p><strong>Inverse simple format, with start times only:</strong></p>
                 
                 <div className={styles.minimalCommands}>
                   <pre>
@@ -416,6 +410,17 @@ export default function Home() {
                     <p>Title 3 09:21</p>
                   </pre>
                 </div>
+
+                <div className={styles.disclaimer}>
+                  <p>Timestamps are important, so make sure you get them right. The tool validates your input to help you avoid some common issues:</p>
+                  <ul>
+                   <li>Missing chapter names or titles will automatically call the file <em>Untitled</em>.</li>
+                   <li>Leading numbers with patterns like "1. ", "2: ", "3 - " are removed.</li>
+                   <li>Illegal filename characters, spaces, underscores, etc. are trimmed.</li>
+                  </ul>
+                  <p>If your filenames and audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
+                </div>
+
             </div>
           </details>
         </div>
