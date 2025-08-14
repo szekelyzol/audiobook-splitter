@@ -414,11 +414,11 @@ export default function Home() {
                 <div className={styles.disclaimer}>
                   <p>Timestamps are important, so make sure you get them right. The tool validates your input to help you avoid some common issues:</p>
                   <ul>
-                   <li>Missing chapter names or titles will automatically call the file <em>Untitled</em>.</li>
-                   <li>Leading numbers with patterns like "1. ", "2: ", "3 - " are removed.</li>
+                   <li>Missing chapter names or titles will automatically create <em>Untitled</em> files.</li>
+                   <li>Leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed.</li>
                    <li>Illegal filename characters, spaces, underscores, etc. are trimmed.</li>
                   </ul>
-                  <p>If your filenames and audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
+                  <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
                 </div>
 
             </div>
