@@ -433,9 +433,7 @@ export default function Home() {
               <h2>troubleshooting</h2>
             </summary>
             <div className={styles.sidebarSection}>
-
-              <h3>notes on validation</h3>
-
+              
               <p>The tool validates your input to help you avoid some common issues:</p>
               <p>• missing chapter names or titles will automatically create <em>Untitled</em> files</p>
               <p>• leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed </p>
