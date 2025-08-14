@@ -60,17 +60,32 @@ export default function Home() {
         let start = '';
 
         if (timeMatch) {
-        start = normalizeTimestamp(timeMatch[1]);
-
-        // everything after the matched time
-        const afterTime = line.slice(line.indexOf(timeMatch[0]) + timeMatch[0].length);
-          title = afterTime.replace(/[-–—]/g, '').trim(); // may be ''
+          start = normalizeTimestamp(timeMatch[1]);
+        
+          // Where is the time token in the line?
+          const timeIdx = line.lastIndexOf(timeMatch[0]);
+        
+          // Text around the time
+          const beforeRaw = line.slice(0, timeIdx);
+          const afterRaw  = line.slice(timeIdx + timeMatch[0].length);
+        
+          // Clean both sides
+          const beforeClean = beforeRaw
+            .replace(/^\s*\d+\s*([.)-]\s*|\s+-\s*)/, '') // strip list bullets like "1. " / "2) " only from BEFORE side
+            .replace(/[-–—]\s*$/,'')                     // trailing dash separators
+            .trim();
+        
+          const afterClean = afterRaw
+            .replace(/^[-–—]\s*/, '')                    // leading dash separators
+            .trim();
+        
+          // Prefer title after the time; if empty, fall back to beforeTime
+          title = afterClean || beforeClean;
         } else {
-        const chapterMatch = line.match(/Chapter\s+(\d+)/i);
-        if (chapterMatch) {
-        // keep as-is if you want to support lines like "Chapter 3" with no time
-          title = line;
-          start = '00:00:00';
+          const chapterMatch = line.match(/Chapter\s+(\d+)/i);
+          if (chapterMatch) {
+            title = line;
+            start = '00:00:00';
           }
         }
 
