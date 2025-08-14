@@ -376,6 +376,8 @@ export default function Home() {
                 <div className={styles.disclaimer}>
                   <p>Timestamps are important, so read this!</p>
                 </div>
+
+              <br />
               
                 <p>This tool supports the most common timestamp formats:</p>
                 <p>• Standard WEBVTT:</p>
