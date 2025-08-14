@@ -162,29 +162,40 @@ export default function Home() {
     
       const commands: string[] = [];
 
-    // If no timestamps are added, just download the full audio.
+    // Generate commands. If no timestamps are added, just download the full audio.
     if (parsedChapters.length === 0) {
       commands.push('# Download full audio as single file');
-      commands.push(`yt-dlp -x --audio-format mp3 -o "audio.mp3" "${url}"`);
+      commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.mp3" "${url}"`);
 
       setGeneratedCommands(commands);
       return;
     }
 
-    // Generate commands
+    // Generate commands. If valid timestamps are added, download the full audio, then create an output folder and split the full audio into separate tracks based on the timestamp into the output folder.
     commands.push('# Step 1: Download audio from source');
-    commands.push(`yt-dlp -x --audio-format mp3 -o "audio.%(ext)s" "${url}"`);
+    commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.%(ext)s" "${url}"`);
     commands.push('');
-    commands.push('# Step 2: Split audio into chapters');
+    commands.push('# Step 2: Prepare output folder with auto-increment if needed');
+    commands.push('set "outdir=output"');
+    commands.push('set /a n=1');
+    commands.push(':checkfolder');
+    commands.push('if exist "%outdir%" (');
+    commands.push('  set /a n+=1');
+    commands.push('  set "outdir=output_%n%"');
+    commands.push('  goto checkfolder');
+    commands.push(')');
+    commands.push('mkdir "%outdir%"');
+    commands.push('');
+    commands.push('# Step 3: Split audio into chapters');
     commands.push('');
 
     parsedChapters.forEach((chapter, index) => {
       const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `ffmpeg -i "audio.mp3" -ss ${chapter.start}`;
+      let cmd = `ffmpeg -i "full-audio.mp3" -ss ${chapter.start}`;
       if (chapter.end) {
         cmd += ` -to ${chapter.end}`;
       }
-      cmd += ` -c copy "${paddedIndex}_${chapter.title}.mp3"`;
+      cmd += ` -c copy "%outdir%/${paddedIndex}_${chapter.title}.mp3"`;
       commands.push(cmd);
     });
 
