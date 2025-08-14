@@ -204,7 +204,7 @@ export default function Home() {
   };
 
   // Package-manager installer commands
-  const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp\nwinget install -e --id FFmpeg.FFmpeg';
+  const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp\nwinget install -e --id Gyan.FFmpeg';
 
   const MAC_BREW  = 'brew install yt-dlp ffmpeg';
   
