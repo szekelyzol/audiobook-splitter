@@ -13,8 +13,8 @@ export default function Home() {
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
 
   // Accordion: check which sidebar section is open
-  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' | null>(null);
-  const toggleSection = (key: 'info' | 'requirements' | 'howto') => {
+  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' |  'troubleshooting' | null>(null);
+  const toggleSection = (key: 'info' | 'requirements' | 'howto' |  'troubleshooting') => {
     setOpenSection(prev => (prev === key ? null : key));
   };
 
@@ -180,7 +180,7 @@ export default function Home() {
     const folderName = `output_${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}`;
     commands.push(`mkdir "${folderName}"`);
     commands.push('');
-    
+
     commands.push('# Step 3: Split audio into chapters');
     commands.push('');
 
@@ -377,9 +377,12 @@ export default function Home() {
 
               <br />
 
-              <h3>notes about timestamps</h3>
-              
-                <p>This tool supports some common timestamp formats.</p>
+              <h3>timestamp examples</h3>
+
+                <div className={styles.disclaimer}>
+                  <p>This tool supports some common timestamp formats. Timestamps formatting is important, so make sure you get them right. Check the troubleshooting section if you encounter any issues.</p>
+                </div>
+
                 <p><strong>Standard WEBVTT:</strong></p>
                 
                 <div className={styles.minimalCommands}>
@@ -427,6 +430,31 @@ export default function Home() {
                   <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
                 </div>
 
+            </div>
+          </details>
+
+          <hr />
+            
+          <br />
+
+          {/* TROUBLESHOOTING section */}
+          <details open={openSection === 'troubleshooting'}>
+            <summary onClick={(e) => { e.preventDefault(); toggleSection('troubleshooting'); }}>
+              <h2>troubleshooting</h2>
+            </summary>
+            <div className={styles.sidebarSection}>
+
+              <h3>need help?</h3>
+
+              <div className={styles.disclaimer}>
+                  <p>The tool validates your input to help you avoid some common issues:</p>
+                  <ul>
+                   <li>Missing chapter names or titles will automatically create <em>Untitled</em> files.</li>
+                   <li>Leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed.</li>
+                   <li>Illegal filename characters, spaces, underscores, etc. are trimmed.</li>
+                  </ul>
+                  <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
+              </div>
             </div>
           </details>
         </div>
