@@ -382,13 +382,13 @@ export default function Home() {
                 
                 <div className={styles.minimalCommands}>
                   <pre>
-                    WEBVTT
-                    00:00:00 --&gt; 00:04:35
-                    Title 1
-                    00:04:35 --&gt; 00:09:21
-                    Title 2
-                    00:09:21 --&gt; 00:12:08
-                    Title 3
+                    <p>WEBVTT</p>
+                    <p>00:00:00 --&gt; 00:04:35</p>
+                    <p>Title 1</p>
+                    <p>00:04:35 --&gt; 00:09:21</p>
+                    <p>Title 2</p>
+                    <p>00:09:21 --&gt; 00:12:08</p>
+                    <p>Title 3</p>
                   </pre>
                     <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
                       See the WEBVTT specs for more info and examples.
@@ -399,16 +399,20 @@ export default function Home() {
                 
                 <div className={styles.minimalCommands}>
                   <pre>
-                    <code>00:00 Title 1</code>
-                    <code>04:35 Title 2</code>
-                    <code>09:21 Title 3</code>
+                    <p>00:00 Title 1</p>
+                    <p>04:35 Title 2</p>
+                    <p>09:21 Title 3</p>
                   </pre>
                 </div>
 
                 <p><strong>Inverse simple format, with start times only:</strong></p>
                 
                 <div className={styles.minimalCommands}>
-                  <pre>Title 1 00:00\nTitle 2 04:35\nTitle 3 09:21</pre>
+                  <pre>
+                    <p>Title 1 00:00</p>
+                    <p>Title 2 04:35</p>
+                    <p>Title 3 09:21</p>
+                  </pre>
                 </div>
 
                 <div className={styles.disclaimer}>
