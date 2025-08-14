@@ -399,9 +399,9 @@ export default function Home() {
                 
                 <div className={styles.minimalCommands}>
                   <pre>
-                    00:00 Title 1
-                    04:35 Title 2
-                    09:21 Title 3
+                    <code>00:00 Title 1</code>
+                    <code>04:35 Title 2</code>
+                    <code>09:21 Title 3</code>
                   </pre>
                 </div>
 
