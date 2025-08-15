@@ -30,7 +30,7 @@ export default function Home() {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   };
 
-  // Parse and validate timestamps. This includes WEBVTT and simple timestamp formats, and some pretty robust edge case validation.
+  // Parse and validate timestamps. This includes WEBVTT and simple timestamp formats, and some edge case validation.
   const parseTimestamps = (input: string): Chapter[] => {
     if (!input.trim()) return [];
 
@@ -99,7 +99,7 @@ export default function Home() {
           }
         }
 
-        // NOTE: push even if title is empty; sanitizeTitle('') -> 'Untitled'
+        // Push even if title is empty; sanitizeTitle('') -> 'Untitled'
          if (start) {
           chapters.push({
             start,
@@ -367,11 +367,16 @@ export default function Home() {
               <h3>steps</h3>
 
               <p><strong>1.</strong> Install the required tools.</p>
-              <p><strong>2.</strong> Paste a youtube url (shorts not supported).</p>
+              <p><strong>2.</strong> Paste a youtube url.</p>
               <p><strong>3.</strong> Paste timestamps (from youtube description/comments).</p>
               <p><strong>4.</strong> Click <em>generate</em> to create the commands.</p>
               <p><strong>5.</strong> Run the generated commands in a terminal.</p>
-              <p><strong>6.</strong> Your mp3 tracks should be ready in the current folder.</p>
+              <p><strong>6.</strong> Your mp3 tracks should be ready in the output folder.</p>
+
+              <div className={styles.introbox}>
+                <p>If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name is <pre>output_&lt;date-timestamp&gt;.</pre></p>
+                <p>If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
+              </div>
 
               {/* TIMESTAMP FORMAT section */}
 
@@ -380,7 +385,7 @@ export default function Home() {
               <h3>timestamp examples</h3>
 
                 <div className={styles.disclaimer}>
-                  <p>This tool supports some common timestamp formats. Timestamps formatting is important, so make sure you get them right.</p>
+                  <p>This tool supports some common timestamp formats. Formatting is important, so make sure you check these examples.</p>
                   <p>Check the troubleshooting section if you encounter any issues.</p>
                 </div>
 
@@ -434,14 +439,21 @@ export default function Home() {
             </summary>
             <div className={styles.sidebarSection}>
               
-              <p>The tool validates your input to help you avoid some common issues:</p>
+              <p>The tool checks if the format of the youtube URL you enter is valid or not, but it cannot check if there is actual content behind a youtube URL that is otherwise valid.</p>
+              <p>Shorts are currently not supported.</p>
+              <p>If you only enter a URL, it will be downloaded as-is, without splitting.</p>
+              <p>If enter a valid URL and an invalid timestamp, the audio will be downloaded as-is, without splitting.</p>
+            
+              <br />
+              
+              <p>The tool also cleans up your input to help you avoid some common issues:</p>
               <p>• missing chapter names or titles will automatically create <em>Untitled</em> files</p>
               <p>• leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed </p>
               <p>• illegal filename characters, spaces, underscores, etc. are trimmed</p>
             
               <br />
 
-              <p>If your filenames or audio lengths look weird, check your input and the generated commands for incorrect timestamps.</p>
+              <p>If the filenames or audio lengths look weird in the output, check your input and the generated commands for incorrect timestamps.</p>
             </div>
           </details>
         </div>
