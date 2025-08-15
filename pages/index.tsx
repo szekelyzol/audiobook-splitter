@@ -373,11 +373,6 @@ export default function Home() {
               <p><strong>5.</strong> Run the generated commands in a terminal.</p>
               <p><strong>6.</strong> Your mp3 tracks should be ready in the output folder.</p>
 
-              <div className={styles.introbox}>
-                <p>If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <pre>output_&lt;date-timestamp&gt;</pre></p>
-                <p>If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
-              </div>
-
               {/* TIMESTAMP FORMAT section */}
 
               <br />
@@ -439,10 +434,13 @@ export default function Home() {
             </summary>
             <div className={styles.sidebarSection}>
               
-              <p>The tool checks if the format of the youtube URL you enter is valid or not, but it cannot check if there is actual content behind a youtube URL that is otherwise valid.</p>
-              <p>Shorts are currently not supported.</p>
-              <p>If you only enter a URL, it will be downloaded as-is, without splitting.</p>
-              <p>If enter a valid URL and an invalid timestamp, the audio will be downloaded as-is, without splitting.</p>
+              <p>• The tool checks if the format of the youtube URL you enter is valid or not, but it does not check if there is actual content behind a youtube URL that is otherwise valid.</p>
+              <p>• If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <pre>output_&lt;date-timestamp&gt;</pre></p>
+              <p>• If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
+              <p>• If you use a truncated youtube URL, <code>yt-dlp</code> will throw an error and <code>ffmpeg</code> will not find any files to split. In this scenario, the process will finish without any output.</p>
+              <p>• Shorts are currently not supported.</p>
+              <p>• If you only enter a URL, it will be downloaded as-is, without splitting.</p>
+              <p>• If enter a valid URL and an invalid timestamp, the audio will be downloaded as-is, without splitting.</p>
             
               <br />
               
@@ -453,7 +451,9 @@ export default function Home() {
             
               <br />
 
-              <p>If the filenames or audio lengths look weird in the output, check your input and the generated commands for incorrect timestamps.</p>
+              <div className={styles.introbox}>
+                <p>If the filenames or audio lengths look weird in the output, check your input and the generated commands for incorrect timestamps.</p>
+              </div>
             </div>
           </details>
         </div>
