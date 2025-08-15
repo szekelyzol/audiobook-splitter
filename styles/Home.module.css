@@ -6,6 +6,12 @@
 }
 
 /* Responsiveness */
+@media (min-width: 769px) {
+  .minimalContainer {
+    padding-right: 420px;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
