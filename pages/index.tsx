@@ -325,6 +325,8 @@ export default function Home() {
 
               <p>If you do not have a package manager yet, install WinGet for Windows, or homebrew for macOS.</p>
 
+              <p>You can use these commands to install the required tools automatically:</p>
+
               <div className={styles.minimalCommands}>
                 <p>Windows - WinGet</p>
                 <pre>{WIN_WINGET}</pre>
