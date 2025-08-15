@@ -374,7 +374,7 @@ export default function Home() {
               <p><strong>6.</strong> Your mp3 tracks should be ready in the output folder.</p>
 
               <div className={styles.introbox}>
-                <p>If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name is <pre>output_&lt;date-timestamp&gt;.</pre></p>
+                <p>If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <pre>output_&lt;date-timestamp&gt;</pre></p>
                 <p>If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
               </div>
 
