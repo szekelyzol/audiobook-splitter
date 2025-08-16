@@ -437,7 +437,7 @@ export default function Home() {
             <div className={styles.sidebarSection}>
               
               <p>• The tool checks if the format of the youtube URL you enter is valid or not, but it does not check if there is actual content behind a youtube URL that is otherwise valid.</p>
-              <p>• If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <pre>output_&lt;date-timestamp&gt;</pre></p>
+              <p>• If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <code>output_&lt;date-timestamp&gt;</code></p>
               <p>• If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
               <p>• If you use a truncated youtube URL, <code>yt-dlp</code> will throw an error and <code>ffmpeg</code> will not find any files to split. In this scenario, the process will finish without any output.</p>
               <p>• Shorts are currently not supported.</p>
