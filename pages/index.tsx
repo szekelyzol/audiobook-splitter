@@ -1,465 +1,128 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import styles from '../styles/Home.module.css';
-
-interface Chapter {
-  start: string;
-  end: string;
-  title: string;
-}
+import { useTimestampParser } from '../hooks/useTimestampParser';
+import { useCommandGenerator } from '../hooks/useCommandGenerator';
+import { useDebounce } from '../hooks/useDebounce';
+import { isValidYouTubeUrl, normalizeYouTubeUrl } from '../utils/youtube';
+import { UrlInput } from '../components/UrlInput';
+import { TimestampInput } from '../components/TimestampInput';
+import { StatusMessages } from '../components/StatusMessages';
+import { CommandOutput } from '../components/CommandOutput';
+import { Sidebar } from '../components/Sidebar';
+import { ACCORDION_SECTIONS } from '../constants/ui';
+import type { AccordionSection } from '../types/ui';
 
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
+  const [openSection, setOpenSection] = useState<AccordionSection>(null);
 
-  // Accordion: check which sidebar section is open
-  const [openSection, setOpenSection] = useState<'info' | 'requirements' | 'howto' |  'troubleshooting' | null>(null);
-  const toggleSection = (key: 'info' | 'requirements' | 'howto' |  'troubleshooting') => {
+  // Debounce URL input to avoid excessive validation
+  const debouncedUrl = useDebounce(sourceUrl, 300);
+  
+  // Custom hooks for business logic
+  const { parseTimestamps } = useTimestampParser();
+  const { generateCommands: createCommands } = useCommandGenerator();
+
+  // Memoized computations
+  const isValidUrl = useMemo(() => 
+    debouncedUrl ? isValidYouTubeUrl(debouncedUrl) : false, 
+    [debouncedUrl]
+  );
+
+  const normalizedUrl = useMemo(() => 
+    sourceUrl ? normalizeYouTubeUrl(sourceUrl) : '', 
+    [sourceUrl]
+  );
+
+  const parsedChapters = useMemo(() => 
+    parseTimestamps(timestampInput), 
+    [timestampInput, parseTimestamps]
+  );
+
+  const hasTimestamps = useMemo(() => 
+    timestampInput.trim().length > 0, 
+    [timestampInput]
+  );
+
+  // Event handlers
+  const toggleSection = (key: AccordionSection) => {
     setOpenSection(prev => (prev === key ? null : key));
   };
 
-  // Validate youtube URL
-  const isValidYouTubeUrl = (raw: string): boolean => {
-  const url = raw.trim();
-  const re = /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/watch\?v=[\w-]+|youtu\.be\/[\w-]+|youtube\.com\/embed\/[\w-]+|youtube-nocookie\.com\/embed\/[\w-]+|youtube\.com\/v\/[\w-]+)$/i;
-  return re.test(url);
-  };
-
-  const normalizeYouTubeUrl = (raw: string): string => {
-  const url = raw.trim();
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
-  };
-
-  // Parse and validate timestamps. This includes WEBVTT and simple timestamp formats, and some edge case validation.
-  const parseTimestamps = (input: string): Chapter[] => {
-    if (!input.trim()) return [];
-
-    const lines = input.split('\n').map(line => line.trim()).filter(line => line !== '');
-    const chapters: Chapter[] = [];
-
-    let startIndex = 0;
-    if (lines[0] && lines[0].toUpperCase() === 'WEBVTT') {
-      startIndex = 1;
-    }
-
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.includes('-->')) {
-        const [start, end = ''] = line.split('-->').map(part => part.trim());
-
-        // Peek at next line; if it's another cue or blank, treat as untitled.
-        const next = (lines[i + 1] ?? '').trim();
-        const isNextCue = next.includes('-->');
-        const hasTitle = next.length > 0 && !isNextCue;
-
-        const titleCandidate = hasTitle ? next : '';
-
-        chapters.push({
-          start: normalizeTimestamp(start),
-          end: normalizeTimestamp(end),
-          title: sanitizeTitle(titleCandidate),
-        });
-
-        // Only skip the next line if it was a real title.
-        if (hasTitle) i++;
-      }
-      else if (line.match(/(\d+:[\d:]+)|(\d+\.\s)|(\d+:\s)|(Chapter\s+\d+)/i)) {
-        const timeMatch = line.match(/(\d+:[\d:]+)/);
-        let title = '';
-        let start = '';
-
-        if (timeMatch) {
-          start = normalizeTimestamp(timeMatch[1]);
-        
-          // Where is the time token in the line?
-          const timeIdx = line.lastIndexOf(timeMatch[0]);
-        
-          // Text around the time
-          const beforeRaw = line.slice(0, timeIdx);
-          const afterRaw  = line.slice(timeIdx + timeMatch[0].length);
-        
-          // Clean both sides
-          const beforeClean = beforeRaw
-            .replace(/^\s*\d+\s*([.)-]\s*|\s+-\s*)/, '') // strip list bullets like "1. " / "2) " only from BEFORE side
-            .replace(/[-–—]\s*$/,'')                     // trailing dash separators
-            .trim();
-        
-          const afterClean = afterRaw
-            .replace(/^[-–—]\s*/, '')                    // leading dash separators
-            .trim();
-        
-          // Prefer title after the time; if empty, fall back to beforeTime
-          title = afterClean || beforeClean;
-        } else {
-          const chapterMatch = line.match(/Chapter\s+(\d+)/i);
-          if (chapterMatch) {
-            title = line;
-            start = '00:00:00';
-          }
-        }
-
-        // Push even if title is empty; sanitizeTitle('') -> 'Untitled'
-         if (start) {
-          chapters.push({
-            start,
-            end: '',
-            title: sanitizeTitle(title)
-          });
-        }
-      }
-    }
-
-    // Fill missing end times with next chapter's start.
-    for (let i = 0; i < chapters.length - 1; i++) {
-      if (!chapters[i].end) {
-        chapters[i].end = chapters[i + 1].start;
-      }
-    }
-
-    return chapters;
-  };
-
-  const normalizeTimestamp = (timestamp: string): string => {
-    if (!timestamp) return '';
-    const cleaned = timestamp.replace(/\.\d+/, '').trim();
-    const parts = cleaned.split(':');
-
-    if (parts.length === 2) {
-      return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-    } else if (parts.length === 3) {
-      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
-    }
-    return cleaned;
-  };
-
-  const sanitizeTitle = (title: string): string => {
-    if (!title || title.trim() === '') return 'Untitled';
-
-    // 1) Keep the word "chapter" intact in chapter titles, do not strip it.
-    // 2) Still strip simple numbered bullets like "1. " at the start.
-    let cleaned = title
-    // Remove leading "1. ", "12. ", "3) ", "4 - " patterns.
-    .replace(/^\s*\d+\s*([.)-]\s*|\s+-\s*)/, '')
-    .trim();
-
-    // If stripping made it empty or just digits, fall back to the original full title
-    if (!cleaned || /^\d+$/.test(cleaned)) cleaned = title.trim();
-
-    // Final filesystem-safe normalization
-    return cleaned
-    .replace(/[<>:"/\\|?*]/g, '_')     // illegal filename chars
-    .replace(/\s+/g, '_')              // spaces -> underscores
-    .replace(/_{2,}/g, '_')            // collapse multiple underscores
-    .replace(/^_|_$/g, '')             // trim leading/trailing underscores
-    .substring(0, 50) || 'Untitled';
-  };
-
-
-    const generateCommands = () => {
-      const url = normalizeYouTubeUrl(sourceUrl);
-      if (!sourceUrl) return;
+  const handleGenerateCommands = () => {
+    if (!normalizedUrl || !isValidUrl) return;
     
-      const commands: string[] = [];
-
-    // Generate commands. If no timestamps are added, just download the full audio.
-    if (parsedChapters.length === 0) {
-      commands.push('# Download full audio as single file');
-      commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.mp3" "${url}"`);
-
-      setGeneratedCommands(commands);
-      return;
-    }
-
-    // Generate commands. If valid timestamps are added, download the full audio, then create an output folder and split the full audio into separate tracks based on the timestamp into the output folder.
-    commands.push('# Step 1: Download audio from source');
-    commands.push(`yt-dlp -x --audio-format mp3 -o "full-audio.%(ext)s" "${url}"`);
-    commands.push('');
-    
-    commands.push('# Step 2: Make a unique output folder with date-timestamp');
-    const folderName = `output_${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}`;
-    commands.push(`mkdir "${folderName}"`);
-    commands.push('');
-
-    commands.push('# Step 3: Split audio into chapters');
-    commands.push('');
-
-    parsedChapters.forEach((chapter, index) => {
-      const paddedIndex = (index + 1).toString().padStart(2, '0');
-      let cmd = `ffmpeg -i "full-audio.mp3" -ss ${chapter.start}`;
-      if (chapter.end) {
-        cmd += ` -to ${chapter.end}`;
-      }
-      cmd += ` -c copy "${folderName}/${paddedIndex}_${chapter.title}.mp3"`;
-      commands.push(cmd);
-    });
-
+    const commands = createCommands(normalizedUrl, parsedChapters);
     setGeneratedCommands(commands);
-  }  
-
-  const copyCommands = () => {
-    navigator.clipboard.writeText(generatedCommands.join('\n'));
-    alert('Commands copied to clipboard!');
   };
 
-  // Quick copy helper for installer commands
-  const copyLine = (text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => alert('Command copied!'))
-      .catch(() => alert('Copy failed. Please copy manually.'));
+  const handleCopyCommands = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedCommands.join('\n'));
+      // In a real app, you'd show a toast notification instead of alert
+      alert('Commands copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      alert('Copy failed. Please copy manually.');
+    }
   };
 
-  // Package-manager installer commands
-  const WIN_WINGET = 'winget install -e --id yt-dlp.yt-dlp\nwinget install -e --id Gyan.FFmpeg';
-
-  const MAC_BREW  = 'brew install yt-dlp ffmpeg';
-  
-  // Trim timestamps
-  const hasTimestamps = timestampInput.trim().length > 0;
-
-  // Compute once per render for UI messages
-  const parsedChapters = parseTimestamps(timestampInput);
+  const handleReset = () => {
+    setGeneratedCommands([]);
+  };
 
   return (
-    <div className={styles.minimalContainer}>
-      {/* Main section */}
+    <div className={styles.container}>
       <div className={styles.mainView}>
-        <h1 className={styles.minimalTitle}>audiobook splitter</h1>
+        <h1 className={styles.title}>audiobook splitter</h1>
 
-        {/* INTRO section */}
-        <div className={styles.introbox}>
+        <div className={styles.introBox}>
           <p><strong>Welcome!</strong></p>
           <p>This tool helps you download audio from youtube and split the resulting file into individual tracks, based on the timestamps.</p>
           <p>It requires minimal setup to work. Check the sidebar for more details!</p>
         </div>
 
-        <input
-          type="url"
+        <UrlInput 
           value={sourceUrl}
-          onChange={(e) => setSourceUrl(e.target.value)}
-          placeholder="youtube url"
-          className={styles.minimalInput}
+          onChange={setSourceUrl}
         />
 
-        <textarea
+        <TimestampInput 
           value={timestampInput}
-          onChange={(e) => setTimestampInput(e.target.value)}
-          placeholder="timestamps (e.g. 00:00 Introduction)"
-          rows={8}
-          className={styles.minimalTextarea}
+          onChange={setTimestampInput}
         />
 
-        {/* Error/Success messages */}
-        {sourceUrl && !isValidYouTubeUrl(sourceUrl) && (
-          <div className={styles.errorMessage}>⚠ invalid youtube url format</div>
-        )}
-        {!sourceUrl && timestampInput && (
-          <div className={styles.errorMessage}>⚠ missing youtube url</div>
-        )}
-        {sourceUrl && isValidYouTubeUrl(sourceUrl) && hasTimestamps && parsedChapters.length === 0 && (
-          <div className={styles.infoMessage}>✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file</div>
-        )}
-        {sourceUrl && isValidYouTubeUrl(sourceUrl) && !hasTimestamps && (
-          <div className={styles.infoMessage}>✓ youtube url looks good, but no timestamps provided — this will download as a single mp3 file</div>
-        )}
-        {sourceUrl && isValidYouTubeUrl(sourceUrl) && parsedChapters.length > 0 && (
-          <div className={styles.successMinimal}>✓ found {parsedChapters.length} chapter(s)</div>
-        )}
+        <StatusMessages 
+          sourceUrl={sourceUrl}
+          debouncedUrl={debouncedUrl}
+          isValidUrl={isValidUrl}
+          hasTimestamps={hasTimestamps}
+          chaptersCount={parsedChapters.length}
+        />
 
         <button
-          onClick={generateCommands}
-          disabled={!sourceUrl || !isValidYouTubeUrl(sourceUrl)}
-          className={styles.minimalButton}
+          onClick={handleGenerateCommands}
+          disabled={!sourceUrl || !isValidUrl}
+          className={styles.generateButton}
         >
           generate
         </button>
 
-        {/* GENERATED COMMANDS section */}
         {generatedCommands.length > 0 && (
-          <div className={styles.minimalCommands}>
-            <pre>{generatedCommands.join('\n')}</pre>
-            <div className={styles.minimalActions}>
-              <button onClick={copyCommands} title="Copy commands to clipboard">copy</button>
-              <button onClick={() => setGeneratedCommands([])} title="Clear everything">reset</button>
-            </div>
-          </div>
+          <CommandOutput 
+            commands={generatedCommands}
+            onCopy={handleCopyCommands}
+            onReset={handleReset}
+          />
         )}
       </div>
 
-      {/* SIDEBAR (always visible, with accordion behavior) */}
-      <div className={`${styles.sidebar} ${styles.sidebarOpen}`}>
-        <div className={styles.sidebarContent}>
-
-          {/* INFO section */}
-          <details open={openSection === 'info'}>
-            <summary onClick={(e) => { e.preventDefault(); toggleSection('info'); }}>
-              <h2>info</h2>
-            </summary>
-            <p>This tool is a simple proof of concept. I created it to download audiobooks from youtube and split them into separate chapters.</p>
-            <p>You can use it to download and split any kind of audio content from youtube. The original goal was to make life easier for me, a parent, whose daughter finishes audiobooks at an unreasonable pace.</p>
-            <p>You can use the output of this tool with a Yoto, or any device that can play mp3 files.</p>
-
-            <div className={styles.disclaimer}>
-              <p><strong>Note:</strong> this tool only generates commands that you can use locally on your device. It does not automatically download content from youtube for you, and does not run anything on your device.</p>
-              <p>Make sure that you only use it with content that is legally available for you to download.</p>
-            </div>
-          </details>
-
-          <hr />
-            
-          <br />
-
-          {/* REQUIREMENTS and INSTALLER section */}
-          <details open={openSection === 'requirements'}>
-
-            <summary onClick={(e) => { e.preventDefault(); toggleSection('requirements'); }}>
-              <h2>requirements</h2>
-            </summary>
-            <div className={styles.sidebarSection}>
-              <p>You need two command‑line tools:</p>
-              <p><strong>1. yt-dlp</strong> — downloads the audio</p>
-              <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-              <p>Both are free and open-source.</p>
-
-              <h3>Install via package manager</h3>
-
-              <p>If you do not have a package manager yet, install WinGet for Windows, or homebrew for macOS.</p>
-
-              <p>You can use these commands to install the required tools automatically:</p>
-
-              <div className={styles.minimalCommands}>
-                <p>Windows - WinGet</p>
-                <pre>{WIN_WINGET}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(WIN_WINGET)}>copy winget commands</button>
-                </div>
-              </div>
-
-              <div className={styles.minimalCommands}>
-                <p>macOS - homebrew</p>
-                <pre>{MAC_BREW}</pre>
-                <div className={styles.minimalActions}>
-                  <button onClick={() => copyLine(MAC_BREW)}>copy brew commands</button>
-                </div>
-              </div>
-
-              <h3>install manually</h3>
-
-              <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" target="_blank" rel="noopener noreferrer">→ yt-dlp installation guide</a>
-              <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">→ ffmpeg downloads</a>
-              <div className={styles.disclaimer}>
-              <p>finding the right ffmpeg package can be a bit tricky. for windows, download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
-              <p>for macOS, check the stable release here:<a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-X.Y.Z.zip</strong></a></p>
-              <p>X.Y.Z. is going to be a version number.</p>
-              </div>
-            </div>
-          </details>
-
-          <hr />
-            
-          <br />
-
-          {/* HOW TO USE section */}
-          <details open={openSection === 'howto'}>
-            <summary onClick={(e) => { e.preventDefault(); toggleSection('howto'); }}>
-              <h2>how to use</h2>
-            </summary>
-            <div className={styles.sidebarSection}>
-
-              <h3>steps</h3>
-
-              <p><strong>1.</strong> Install the required tools.</p>
-              <p><strong>2.</strong> Paste a youtube url.</p>
-              <p><strong>3.</strong> Paste timestamps (from youtube description/comments).</p>
-              <p><strong>4.</strong> Click <em>generate</em> to create the commands.</p>
-              <p><strong>5.</strong> Run the generated commands in a terminal.</p>
-              <p><strong>6.</strong> Your mp3 tracks should be ready in the output folder.</p>
-
-              {/* TIMESTAMP FORMAT section */}
-
-              <br />
-
-              <h3>timestamp examples</h3>
-
-                <div className={styles.disclaimer}>
-                  <p>This tool supports some common timestamp formats. Formatting is important, so make sure you check these examples.</p>
-                  <p>Check the troubleshooting section if you encounter any issues.</p>
-                </div>
-
-                <p><strong>Standard WEBVTT:</strong></p>
-                
-                <div className={styles.minimalCommands}>
-                  <pre>
-                    <p>WEBVTT</p>
-                    <p>00:00:00 --&gt; 00:04:35</p>
-                    <p>Title 1</p>
-                    <p>00:04:35 --&gt; 00:09:21</p>
-                    <p>Title 2</p>
-                    <p>00:09:21 --&gt; 00:12:08</p>
-                    <p>Title 3</p>
-                  </pre>
-                    <p><a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
-                      See the WEBVTT specs for more info and examples.
-                    </a></p>
-                </div>
-
-                <p><strong>Simple format, with start times only:</strong></p>
-                
-                <div className={styles.minimalCommands}>
-                  <pre>
-                    <p>00:00 Title 1</p>
-                    <p>04:35 Title 2</p>
-                    <p>09:21 Title 3</p>
-                  </pre>
-                </div>
-
-                <p><strong>Inverse simple format, with start times only:</strong></p>
-                
-                <div className={styles.minimalCommands}>
-                  <pre>
-                    <p>Title 1 00:00</p>
-                    <p>Title 2 04:35</p>
-                    <p>Title 3 09:21</p>
-                  </pre>
-                </div>
-            </div>
-          </details>
-
-          <hr />
-            
-          <br />
-
-          {/* TROUBLESHOOTING section */}
-          <details open={openSection === 'troubleshooting'}>
-            <summary onClick={(e) => { e.preventDefault(); toggleSection('troubleshooting'); }}>
-              <h2>troubleshooting</h2>
-            </summary>
-            <div className={styles.sidebarSection}>
-              
-              <p>• The tool checks if the format of the youtube URL you enter is valid or not, but it does not check if there is actual content behind a youtube URL that is otherwise valid.</p>
-              <p>• If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <code>output_&lt;date-timestamp&gt;</code></p>
-              <p>• If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
-              <p>• If you use a truncated youtube URL, <code>yt-dlp</code> will throw an error and <code>ffmpeg</code> will not find any files to split. In this scenario, the process will finish without any output.</p>
-              <p>• Shorts are currently not supported.</p>
-              <p>• If you only enter a URL, it will be downloaded as-is, without splitting.</p>
-              <p>• If enter a valid URL and an invalid timestamp, the audio will be downloaded as-is, without splitting.</p>
-            
-              <br />
-              
-              <p>The tool also cleans up your input to help you avoid some common issues:</p>
-              <p>• missing chapter names or titles will automatically create <em>Untitled</em> files</p>
-              <p>• leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed </p>
-              <p>• illegal filename characters, spaces, underscores, etc. are trimmed</p>
-            
-              <br />
-
-              <div className={styles.introbox}>
-                <p>If the filenames or audio lengths look weird in the output, check your input and the generated commands for incorrect timestamps.</p>
-              </div>
-            </div>
-          </details>
-        </div>
-      </div>
+      <Sidebar 
+        openSection={openSection}
+        onToggleSection={toggleSection}
+      />
     </div>
   );
 }
