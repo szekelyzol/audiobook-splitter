@@ -38,7 +38,7 @@
   background: var(--background-color);
 }
 
-@media (min-width: calc(var(--mobile-breakpoint) + 1px)) {
+@media (min-width: 769px) {
   .container {
     padding-right: var(--sidebar-width);
   }
@@ -49,12 +49,6 @@
   max-width: 500px;
   margin: 0 auto;
   padding: var(--spacing-xxl) var(--spacing-md);
-}
-
-@media (max-width: var(--mobile-breakpoint)) {
-  .mainView {
-    padding: 60px 15px;
-  }
 }
 
 /* Typography */
@@ -226,22 +220,6 @@
   z-index: 1000;
 }
 
-@media (max-width: var(--mobile-breakpoint)) {
-  .sidebar {
-    width: 100%;
-    right: -100%;
-    transition: right 0.3s ease;
-  }
-  
-  .container {
-    padding-right: 0;
-  }
-  
-  .mainView {
-    padding: 60px 15px;
-  }
-}
-
 .sidebarContent {
   font-size: var(--font-size-sm);
   line-height: 1.6;
@@ -298,6 +276,21 @@
   color: var(--primary-hover);
 }
 
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  
+  .container {
+    padding-right: 0 !important;
+  }
+  
+  .mainView {
+    padding: 60px 15px !important;
+  }
+}
+
 /* Utility Classes */
 .srOnly {
   position: absolute;
@@ -319,7 +312,8 @@
 
 /* Animation */
 @media (prefers-reduced-motion: no-preference) {
-  .buttonBase,
+  .generateButton,
+  .actionButton,
   .sidebarContent summary h2 {
     transition: all 0.2s ease;
   }
