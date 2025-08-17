@@ -1,5 +1,5 @@
-/* CSS Custom Properties */
-:root {
+/* CSS Variables - using class-based approach for CSS Modules compatibility */
+.container {
   --primary-color: #000;
   --primary-hover: #333;
   --background-color: #fff;
