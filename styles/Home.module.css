@@ -135,6 +135,12 @@
 }
 
 /* Message Components */
+.messageContainer {
+  min-height: 42px; /* Reserve space to prevent layout shift */
+  display: flex;
+  align-items: center;
+}
+
 .infoMessage,
 .errorMessage,
 .successMessage {

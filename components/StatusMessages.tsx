@@ -18,44 +18,41 @@ export const StatusMessages = memo<StatusMessagesProps>(({
   chaptersCount,
   showValidation
 }) => {
-  // Don't show validation messages while user is still typing
-  if (!showValidation) {
-    return null;
+  let messageContent = null;
+
+  // Only show validation messages when appropriate
+  if (showValidation) {
+    if (sourceUrl && !isValidUrl) {
+      messageContent = <div className={styles.errorMessage}>⚠ invalid youtube url format</div>;
+    } else if (!sourceUrl && hasTimestamps) {
+      messageContent = <div className={styles.errorMessage}>⚠ missing youtube url</div>;
+    } else if (debouncedUrl && isValidUrl && hasTimestamps && chaptersCount === 0) {
+      messageContent = (
+        <div className={styles.infoMessage}>
+          ✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file
+        </div>
+      );
+    } else if (debouncedUrl && isValidUrl && !hasTimestamps) {
+      messageContent = (
+        <div className={styles.infoMessage}>
+          ✓ youtube url looks good, but no timestamps provided — this will download as a single mp3 file
+        </div>
+      );
+    } else if (debouncedUrl && isValidUrl && chaptersCount > 0) {
+      messageContent = (
+        <div className={styles.successMessage}>
+          ✓ found {chaptersCount} chapter(s)
+        </div>
+      );
+    }
   }
 
-  if (sourceUrl && !isValidUrl) {
-    return <div className={styles.errorMessage}>⚠ invalid youtube url format</div>;
-  }
-
-  if (!sourceUrl && hasTimestamps) {
-    return <div className={styles.errorMessage}>⚠ missing youtube url</div>;
-  }
-
-  if (debouncedUrl && isValidUrl && hasTimestamps && chaptersCount === 0) {
-    return (
-      <div className={styles.infoMessage}>
-        ✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file
-      </div>
-    );
-  }
-
-  if (debouncedUrl && isValidUrl && !hasTimestamps) {
-    return (
-      <div className={styles.infoMessage}>
-        ✓ youtube url looks good, but no timestamps provided — this will download as a single mp3 file
-      </div>
-    );
-  }
-
-  if (debouncedUrl && isValidUrl && chaptersCount > 0) {
-    return (
-      <div className={styles.successMessage}>
-        ✓ found {chaptersCount} chapter(s)
-      </div>
-    );
-  }
-
-  return null;
+  // Always render the container to reserve space
+  return (
+    <div className={styles.messageContainer}>
+      {messageContent}
+    </div>
+  );
 });
 
 StatusMessages.displayName = 'StatusMessages';
