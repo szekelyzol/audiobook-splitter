@@ -1,0 +1,1 @@
+export type AccordionSection = 'info' | 'requirements' | 'howto' | 'troubleshooting' | null;
