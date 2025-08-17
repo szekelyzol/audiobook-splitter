@@ -137,6 +137,7 @@
 /* Message Components */
 .messageContainer {
   min-height: 42px; /* Reserve space to prevent layout shift */
+  margin-bottom: var(--spacing-md); /* Move margin to container */
   display: flex;
   align-items: center;
 }
@@ -146,9 +147,9 @@
 .successMessage {
   font-size: var(--font-size-base);
   padding: var(--spacing-sm);
-  margin: var(--spacing-sm) 0;
   border-radius: var(--border-radius);
   font-family: var(--font-family-base);
+  margin: 0; /* Remove all margins from messages */
 }
 
 .infoMessage {
