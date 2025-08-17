@@ -7,6 +7,7 @@ interface StatusMessagesProps {
   isValidUrl: boolean;
   hasTimestamps: boolean;
   chaptersCount: number;
+  showValidation: boolean;
 }
 
 export const StatusMessages = memo<StatusMessagesProps>(({
@@ -14,8 +15,14 @@ export const StatusMessages = memo<StatusMessagesProps>(({
   debouncedUrl,
   isValidUrl,
   hasTimestamps,
-  chaptersCount
+  chaptersCount,
+  showValidation
 }) => {
+  // Don't show validation messages while user is still typing
+  if (!showValidation) {
+    return null;
+  }
+
   if (sourceUrl && !isValidUrl) {
     return <div className={styles.errorMessage}>⚠ invalid youtube url format</div>;
   }

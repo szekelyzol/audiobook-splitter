@@ -100,6 +100,7 @@ export default function Home() {
           isValidUrl={isValidUrl}
           hasTimestamps={hasTimestamps}
           chaptersCount={parsedChapters.length}
+          showValidation={debouncedUrl === sourceUrl || sourceUrl === ''}
         />
 
         <button
