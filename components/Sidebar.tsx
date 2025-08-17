@@ -115,13 +115,13 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             <p><strong>Standard WEBVTT:</strong></p>
             <div className={styles.commandOutput}>
               <pre>
-                WEBVTT
-                00:00:00 --&gt; 00:04:35
-                Title 1
-                00:04:35 --&gt; 00:09:21
-                Title 2
-                00:09:21 --&gt; 00:12:08
-                Title 3
+                <p>WEBVTT</p>
+                <p>00:00:00 --&gt; 00:04:35</p>
+                <p>Title 1</p>
+                <p>00:04:35 --&gt; 00:09:21</p>
+                <p>Title 2</p>
+                <p>00:09:21 --&gt; 00:12:08</p>
+                <p>Title 3</p>
               </pre>
               <p>
                 <a href="https://www.w3.org/TR/webvtt1/#introduction-chapters" target="_blank" rel="noopener noreferrer">
@@ -133,18 +133,18 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             <p><strong>Simple format, with start times only:</strong></p>
             <div className={styles.commandOutput}>
               <pre>
-                00:00 Title 1
-                04:35 Title 2
-                09:21 Title 3
+                <p>00:00 Title 1</p>
+                <p>04:35 Title 2</p>
+                <p>09:21 Title 3</p>
               </pre>
             </div>
 
             <p><strong>Inverse simple format, with start times only:</strong></p>
             <div className={styles.commandOutput}>
               <pre>
-                Title 1 00:00
-                Title 2 04:35
-                Title 3 09:21
+                <p>Title 1 00:00</p>
+                <p>Title 2 04:35</p>
+                <p>Title 3 09:21</p>
               </pre>
             </div>
           </div>
