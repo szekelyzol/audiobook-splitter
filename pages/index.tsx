@@ -94,6 +94,14 @@ export default function Home() {
           onChange={setTimestampInput}
         />
 
+        <button
+          onClick={handleGenerateCommands}
+          disabled={!sourceUrl || !isValidUrl}
+          className={styles.generateButton}
+        >
+          generate
+        </button>
+
         <StatusMessages 
           sourceUrl={sourceUrl}
           debouncedUrl={debouncedUrl}
@@ -102,14 +110,6 @@ export default function Home() {
           chaptersCount={parsedChapters.length}
           showValidation={debouncedUrl === sourceUrl || sourceUrl === ''}
         />
-
-        <button
-          onClick={handleGenerateCommands}
-          disabled={!sourceUrl || !isValidUrl}
-          className={styles.generateButton}
-        >
-          generate
-        </button>
 
         {generatedCommands.length > 0 && (
           <CommandOutput 
