@@ -9,12 +9,12 @@ import { TimestampInput } from '../components/TimestampInput';
 import { StatusMessages } from '../components/StatusMessages';
 import { CommandOutput } from '../components/CommandOutput';
 import { Sidebar } from '../components/Sidebar';
-import { ACCORDION_SECTIONS } from '../constants/ui';
 import type { AccordionSection } from '../types/ui';
 
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
+  const [titleInput, setTitleInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
 
@@ -54,7 +54,7 @@ export default function Home() {
   const handleGenerateCommands = () => {
     if (!normalizedUrl || !isValidUrl) return;
     
-    const commands = createCommands(normalizedUrl, parsedChapters);
+    const commands = createCommands(normalizedUrl, parsedChapters, titleInput.trim());
     setGeneratedCommands(commands);
   };
 
@@ -92,6 +92,15 @@ export default function Home() {
         <TimestampInput 
           value={timestampInput}
           onChange={setTimestampInput}
+        />
+
+        <input
+          type="text"
+          value={titleInput}
+          onChange={(e) => setTitleInput(e.target.value)}
+          placeholder="custom title (optional)"
+          className={styles.inputBase}
+          aria-label="Custom Title"
         />
 
         <button

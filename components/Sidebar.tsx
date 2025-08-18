@@ -102,9 +102,21 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             <p><strong>1.</strong> Install the required tools.</p>
             <p><strong>2.</strong> Paste a youtube url.</p>
             <p><strong>3.</strong> Paste timestamps (from youtube description/comments).</p>
-            <p><strong>4.</strong> Click <em>generate</em> to create the commands.</p>
-            <p><strong>5.</strong> Run the generated commands in a terminal.</p>
-            <p><strong>6.</strong> Your mp3 tracks should be ready in the output folder.</p>
+            <p><strong>4.</strong> Optional: add a custom title.</p>
+            <p><strong>5.</strong> Click <em>generate</em> to create the commands.</p>
+            <p><strong>6.</strong> Run the generated commands in a terminal.</p>
+            <p><strong>7.</strong> Your mp3 tracks should be ready in the output folder.</p>
+
+            <h3>output scenarios</h3>
+            <div className={styles.introBox}>
+              <p><strong>Single file download, no timestamps:</strong></p>
+              <p>• With custom title: Creates <code>your_custom_title.mp3</code></p>
+              <p>• Without custom title: Creates <code>youtube_video_title.mp3</code></p>
+              <br />
+              <p><strong>Split into chapters:</strong></p>
+              <p>• With custom title: Creates <code>your_custom_title.mp3</code>, folder <code>your_custom_title_timestamp</code>, and tracks like <code>01_Chapter1.mp3</code></p>
+              <p>• Without custom title: Creates <code>full_audio.mp3</code>, folder <code>output_&lt;date-timestamp&gt;</code>, and tracks like <code>01_Chapter1.mp3</code></p>
+            </div>
 
             <h3>timestamp examples</h3>
             <div className={styles.disclaimer}>
@@ -159,16 +171,12 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
           </summary>
           <div className={styles.sidebarSection}>
             <p>• The tool checks if the format of the youtube URL you enter is valid or not, but it does not check if there is actual content behind a youtube URL that is otherwise valid.</p>
-            <p>• If you create split tracks, the output folder will be under the folder where you run the generated commands. The folder name will be: <code>output_&lt;date-timestamp&gt;</code></p>
-            <p>• If you do not create split tracks and only download the full audio, it will be in the folder where you run the generated commands.</p>
             <p>• If you use a truncated youtube URL, <code>yt-dlp</code> will throw an error and <code>ffmpeg</code> will not find any files to split. In this scenario, the process will finish without any output.</p>
-            <p>• Shorts are currently not supported.</p>
-            <p>• If you only enter a URL, it will be downloaded as-is, without splitting.</p>
-            <p>• If enter a valid URL and an invalid timestamp, the audio will be downloaded as-is, without splitting.</p>
+            <p>• Youtube shorts are currently not supported.</p>
 
             <br />
 
-            <p>The tool also cleans up your input to help you avoid some common issues:</p>
+            <p>The tool cleans up your input to help you avoid some common issues:</p>
             <p>• missing chapter names or titles will automatically create <em>Untitled</em> files</p>
             <p>• leading numbers and patterns like &quot;1. &quot;, &quot;2: &quot;, &quot;3 - &quot; are removed </p>
             <p>• illegal filename characters, spaces, underscores, etc. are trimmed</p>
