@@ -160,29 +160,6 @@ To run the tool in locally on your device, go through these steps:
 
 5. **Open your browser:** Navigate to your [localhost](http://localhost:3000)
 
-### Project structure
-
-```
-src/
-├── components/          # React components
-│   ├── CommandOutput.tsx
-│   ├── Sidebar.tsx
-│   ├── StatusMessages.tsx
-│   ├── TimestampInput.tsx
-│   └── UrlInput.tsx
-├── hooks/              # Custom React hooks
-│   ├── useCommandGenerator.ts
-│   ├── useDebounce.ts
-│   └── useTimestampParser.ts
-├── utils/              # Utility functions
-│   ├── filename.ts
-│   ├── timestamp.ts
-│   └── youtube.ts
-├── types/              # TypeScript type definitions
-├── constants/          # App constants
-└── styles/             # CSS modules
-```
-
 ## Contributing
 
 Contributions are welcome, but keep in mind that this project is just a simple proof of concept, and that I'm not an expert in JavaScript. If you find within yourself an irresistible urge to contribute to this project, please feel free to submit a PR!
