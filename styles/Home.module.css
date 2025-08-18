@@ -136,10 +136,11 @@
 
 /* Message Components */
 .messageContainer {
-  min-height: 42px; /* Reserve space to prevent layout shift */
-  margin-bottom: var(--spacing-md); /* Move margin to container */
+  min-height: 74px; /* Height for 2-line messages: (14px * 1.4 line-height * 2 lines) + 20px padding + 20px margin */
+  margin-bottom: var(--spacing-md);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: var(--spacing-sm);
 }
 
 .infoMessage,
@@ -149,7 +150,10 @@
   padding: var(--spacing-sm);
   border-radius: var(--border-radius);
   font-family: var(--font-family-base);
-  margin: 0; /* Remove all margins from messages */
+  margin: 0;
+  line-height: 1.4;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .infoMessage {
