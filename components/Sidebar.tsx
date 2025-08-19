@@ -37,7 +37,7 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             </div>
           </div>
 
-            <p>You can run this tool locally. Check out the [GitHub repo](https://github.com/szekelyzol/audiobook-splitter/) for more details.</p>
+            <p>Check out the <a href="https://github.com/szekelyzol/audiobook-splitter/" target="_blank" rel="noopener noreferrer"><strong>GitHub repo</strong></a> for more details.</p>
         </details>
 
         <hr />
