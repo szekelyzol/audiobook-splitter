@@ -16,23 +16,14 @@ type Icon = { displayIconId: string; mediaId: string; title: string; url: string
 type TranscodeInfo = { transcodedSha256: string; duration?: number; fileSize?: number; format?: string };
 
 export default function YotoPage() {
-  // UI state
+  // Env flag — DO NOT return early before hooks; we only branch when rendering.
+  const disabled = process.env.NEXT_PUBLIC_ENABLE_YOTO === "false";
+
+  // UI state (hooks must always be called in the same order)
   const [deviceInit, setDeviceInit] = useState<DeviceInit | null>(null);
   const [icons, setIcons] = useState<Icon[]>([]);
   const [selectedIconMediaId, setSelectedIconMediaId] = useState<string | null>(null);
   const [log, setLog] = useState<string>("");
-
-  // Optional: Disable the page in preview/static builds
-  if (process.env.NEXT_PUBLIC_ENABLE_YOTO === "false") {
-    return (
-      <main className={styles.main}>
-        <div className={styles.center}>
-          <h1>Yoto disabled</h1>
-          <p>This environment doesn’t have Yoto enabled.</p>
-        </div>
-      </main>
-    );
-  }
 
   // --- Auth flows ---
   const startBrowserAuth = useCallback(() => {
@@ -145,6 +136,18 @@ export default function YotoPage() {
     [icons, selectedIconMediaId]
   );
 
+  // --- Render ---
+  if (disabled) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.center}>
+          <h1>Yoto disabled</h1>
+          <p>This environment doesn’t have Yoto enabled.</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.main}>
       <div className={styles.center}>
@@ -193,6 +196,7 @@ export default function YotoPage() {
             <button onClick={fetchIcons}>Load public icons</button>
             {selectedIcon && (
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={selectedIcon.url} alt={selectedIcon.title} width={20} height={20} />
                 <code>{selectedIcon.mediaId}</code>
               </span>
@@ -212,6 +216,7 @@ export default function YotoPage() {
                   checked={selectedIconMediaId === i.mediaId}
                   onChange={() => setSelectedIconMediaId(i.mediaId)}
                 />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={i.url} alt={i.title} width={24} height={24} />
                 <code>{i.mediaId}</code>
                 <span>{i.title}</span>
