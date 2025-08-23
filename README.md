@@ -1,4 +1,4 @@
-# Audiobook splitter
+# Audiobook splitter ... and maybe a YOTO API integration?
 
 A simple web tool that helps you download audio from YouTube and split it into individual tracks based on timestamps. Perfect for creating chapter-based audiobooks that work with devices like Yoto players or any MP3-compatible device.
 
