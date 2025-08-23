@@ -7,9 +7,9 @@ export async function uploadToYoto(file: File) {
     `/api/yoto/upload-init?sha256=${sha}&filename=${encodeURIComponent(file.name)}`
   ).then(r => r.json());
 
-  const { upload } = init; // { uploadUrl, uploadId }
+  const { upload } = init as { upload: { uploadUrl: string | null; uploadId: string } };
 
-  // If uploadUrl exists, PUT bytes directly to the signed URL
+  // Direct PUT to the signed URL (if Yoto doesn't already have this sha)
   if (upload.uploadUrl) {
     await fetch(upload.uploadUrl, {
       method: "PUT",
@@ -18,13 +18,15 @@ export async function uploadToYoto(file: File) {
     });
   }
 
-  // Poll status from the browser
-  let info: any | null = null;
+  // Poll for transcode readiness (loudnorm=false recommended in docs)
+  let transcoded: any | null = null;
   for (let i = 0; i < 120; i++) {
-    const s = await fetch(`/api/yoto/transcode-status?uploadId=${upload.uploadId}`).then(r => r.json());
-    if (s?.transcode?.transcodedSha256) { info = s.transcode; break; }
+    const s = await fetch(`/api/yoto/transcode-status?uploadId=${upload.uploadId}&loudnorm=false`)
+      .then(r => r.json());
+    if (s?.transcode?.transcodedSha256) { transcoded = s.transcode; break; }
     await new Promise(r => setTimeout(r, 1000));
   }
-  if (!info) throw new Error("Transcoding timed out");
-  return { sha, info }; // info.transcodedSha256, info.duration, etc.
+  if (!transcoded) throw new Error("Transcoding timed out");
+
+  return { sha, transcoded };
 }

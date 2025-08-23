@@ -82,54 +82,62 @@ export default function YotoPage() {
   }, []);
 
   // --- Upload & playlist ---
-  const onFile = useCallback(
-    async (f: File) => {
-      try {
-        setLog((l) => l + `\nUploading ${f.name} …`);
-        const { info }: { info: TranscodeInfo } = await uploadToYoto(f);
-        setLog((l) => l + `\nTranscoded: ${info.transcodedSha256}`);
+const onFile = useCallback(async (f: File) => {
+  try {
+    setLog(l => l + `\nUploading ${f.name} …`);
 
-        const title = f.name.replace(/\.[^.]+$/, "");
-        const iconVal = selectedIconMediaId ? `yoto:#${selectedIconMediaId}` : null;
+    const { transcoded } = await uploadToYoto(f);
+    setLog(l => l + `\nTranscoded: ${transcoded.transcodedSha256}`);
 
-        const chapters = [
-          {
-            key: "01",
-            title,
-            display: iconVal ? { icon16x16: iconVal } : undefined,
-            tracks: [
-              {
-                key: "01",
-                title,
-                trackUrl: `yoto:#${info.transcodedSha256}`,
-                duration: info?.duration || 0,
-                fileSize: info?.fileSize,
-                format: info?.format,
-                type: "audio",
-                overlayLabel: "1",
-                display: iconVal ? { icon16x16: iconVal } : undefined,
-              },
-            ],
-          },
-        ];
+    const info = transcoded.transcodedInfo || {};
+    const title = info?.metadata?.title || f.name.replace(/\.[^.]+$/, "");
 
-        const created = await fetch("/api/yoto/create-playlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, chapters }),
-        }).then((r) => r.json());
+    // Coerce channels to what the API expects
+    const channels =
+      info?.channels === 1 ? "mono" :
+      info?.channels === 2 ? "stereo" :
+      undefined;
 
-        setLog(
-          (l) =>
-            l +
-            `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`
-        );
-      } catch (e: any) {
-        setLog((l) => l + `\nUpload error: ${e?.message || e}`);
-      }
-    },
-    [selectedIconMediaId]
-  );
+    const iconVal = selectedIconMediaId ? `yoto:#${selectedIconMediaId}` : null;
+
+    const chapters = [{
+      key: "01",
+      title,
+      display: iconVal ? { icon16x16: iconVal } : undefined,
+      tracks: [{
+        key: "01",
+        title,
+        overlayLabel: "1",
+        trackUrl: `yoto:#${transcoded.transcodedSha256}`,
+        duration: info?.duration ?? 1,
+        fileSize: info?.fileSize ?? 1,
+        format: info?.format || "mp3",
+        type: "audio",
+        ...(channels ? { channels } : {}),
+        display: iconVal ? { icon16x16: iconVal } : undefined,
+      }],
+    }];
+
+    const resp = await fetch("/api/yoto/create-playlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        content: { chapters },
+        // (optional but nice): bubble media info to metadata
+        metadata: { media: { duration: info?.duration, fileSize: info?.fileSize } }
+      }),
+    });
+
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(text);
+    const created = JSON.parse(text);
+
+    setLog(l => l + `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`);
+  } catch (e: any) {
+    setLog(l => l + `\nUpload error: ${e?.message || e}`);
+  }
+}, [selectedIconMediaId]);
 
   const selectedIcon = useMemo(
     () => icons.find((i) => i.mediaId === selectedIconMediaId) || null,
