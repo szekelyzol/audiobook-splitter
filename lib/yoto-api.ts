@@ -42,3 +42,20 @@ export async function listPublicIcons(token: string) {
   if (!res.ok) throw new Error(`public icons failed: ${res.status} ${await res.text()}`);
   return res.json();
 }
+
+export async function getMyContent(token: string, showdeleted = false) {
+const url = new URL(`${API}/content/mine`);
+if (showdeleted) url.searchParams.set("showdeleted", "true");
+const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+if (!res.ok) throw new Error(`getMyContent failed: ${res.status} ${await res.text()}`);
+return res.json();
+}
+
+
+export async function getContent(token: string, cardId: string) {
+const res = await fetch(`${API}/content/${encodeURIComponent(cardId)}`, {
+headers: { Authorization: `Bearer ${token}` },
+});
+if (!res.ok) throw new Error(`getContent failed: ${res.status} ${await res.text()}`);
+return res.json();
+}

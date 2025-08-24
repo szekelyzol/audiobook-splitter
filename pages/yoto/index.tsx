@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import styles from "../../styles/Home.module.css";
 import { uploadToYoto } from "../../utils/yotoUpload";
+import { uploadManySequential, buildTracksFrom, mergeTracksIntoContent } from "../../utils/yotoBatch";
 
-// --- Types for small UI helpers ---
+// --- Types ---
 type DeviceInit = {
   device_code: string;
   user_code: string;
@@ -13,17 +14,31 @@ type DeviceInit = {
 
 type Icon = { displayIconId: string; mediaId: string; title: string; url: string };
 
-type TranscodeInfo = { transcodedSha256: string; duration?: number; fileSize?: number; format?: string };
+type TranscodeInfo = {
+  transcodedSha256: string;
+  duration?: number;
+  fileSize?: number;
+  format?: string;
+};
+
+type MyCard = { cardId: string; title: string };
 
 export default function YotoPage() {
-  // Env flag — DO NOT return early before hooks; we only branch when rendering.
+  // Feature flag (do not early-return before hooks)
   const disabled = process.env.NEXT_PUBLIC_ENABLE_YOTO === "false";
 
-  // UI state (hooks must always be called in the same order)
+  // --- State ---
   const [deviceInit, setDeviceInit] = useState<DeviceInit | null>(null);
   const [icons, setIcons] = useState<Icon[]>([]);
   const [selectedIconMediaId, setSelectedIconMediaId] = useState<string | null>(null);
   const [log, setLog] = useState<string>("");
+
+  // Batch helpers
+  const [playlistTitle, setPlaylistTitle] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [cardId, setCardId] = useState("");
+  const [myCards, setMyCards] = useState<MyCard[]>([]);
+  const [uploadPct, setUploadPct] = useState<string>("");
 
   // --- Auth flows ---
   const startBrowserAuth = useCallback(() => {
@@ -35,7 +50,8 @@ export default function YotoPage() {
       const r: DeviceInit = await fetch("/api/yoto/auth/device-init").then((r) => r.json());
       setDeviceInit(r);
     } catch (e: any) {
-      setLog((l) => l + `\nDevice init error: ${e?.message || e}`);
+      setLog((l) => l + `
+Device init error: ${e?.message || e}`);
     }
   }, []);
 
@@ -46,13 +62,15 @@ export default function YotoPage() {
         `/api/yoto/auth/device-poll?device_code=${encodeURIComponent(deviceInit.device_code)}`
       );
       if (r.status === 200) {
-        setLog((l) => l + "\nDevice auth complete. You can now use the API.");
+        setLog((l) => l + "Device auth complete. You can now use the API.");
       } else {
         const j = await r.json();
-        setLog((l) => l + `\nPending: ${JSON.stringify(j.error)}`);
+        setLog((l) => l + `
+Pending: ${JSON.stringify(j.error)}`);
       }
     } catch (e: any) {
-      setLog((l) => l + `\nDevice poll error: ${e?.message || e}`);
+      setLog((l) => l + `
+Device poll error: ${e?.message || e}`);
     }
   }, [deviceInit]);
 
@@ -64,7 +82,8 @@ export default function YotoPage() {
       setIcons(list);
       setSelectedIconMediaId((prev) => prev || (list[0]?.mediaId ?? null));
     } catch (e: any) {
-      setLog((l) => l + `\nIcon load error: ${e?.message || e}`);
+      setLog((l) => l + `
+Icon load error: ${e?.message || e}`);
     }
   }, []);
 
@@ -75,69 +94,153 @@ export default function YotoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: url }),
       }).then((r) => r.json());
-      setLog((l) => l + `\nUploaded cover image mediaId: ${r?.mediaId || "(unknown)"}`);
+      setLog((l) => l + `
+Uploaded cover image mediaId: ${r?.mediaId || "(unknown)"}`);
     } catch (e: any) {
-      setLog((l) => l + `\nCover upload error: ${e?.message || e}`);
+      setLog((l) => l + `
+Cover upload error: ${e?.message || e}`);
     }
   }, []);
 
-  // --- Upload & playlist ---
-const onFile = useCallback(async (f: File) => {
-  try {
-    setLog(l => l + `\nUploading ${f.name} …`);
+  // --- Single-file Upload & playlist ---
+  const onFile = useCallback(
+    async (f: File) => {
+      try {
+        setLog((l) => l + `
+Uploading ${f.name} …`);
+        const { transcoded }: { transcoded: TranscodeInfo & { transcodedInfo?: any } } = await uploadToYoto(f);
+        setLog((l) => l + `
+Transcoded: ${transcoded.transcodedSha256}`);
 
-    const { transcoded } = await uploadToYoto(f);
-    setLog(l => l + `\nTranscoded: ${transcoded.transcodedSha256}`);
+        const info = (transcoded as any).transcodedInfo || {};
+        const title = info?.metadata?.title || f.name.replace(/\.[^.]+$/, "");
+        const channels = info?.channels === 1 ? "mono" : info?.channels === 2 ? "stereo" : undefined;
+        const iconVal = selectedIconMediaId ? `yoto:#${selectedIconMediaId}` : null;
 
-    const info = transcoded.transcodedInfo || {};
-    const title = info?.metadata?.title || f.name.replace(/\.[^.]+$/, "");
+        const chapters = [
+          {
+            key: "01",
+            title,
+            display: iconVal ? { icon16x16: iconVal } : undefined,
+            tracks: [
+              {
+                key: "01",
+                title,
+                trackUrl: `yoto:#${transcoded.transcodedSha256}`,
+                duration: info?.duration ?? 1,
+                fileSize: info?.fileSize ?? 1,
+                format: info?.format || "mp3",
+                type: "audio",
+                overlayLabel: "1",
+                ...(channels ? { channels } : {}),
+                display: iconVal ? { icon16x16: iconVal } : undefined,
+              },
+            ],
+          },
+        ];
 
-    // Coerce channels to what the API expects
-    const channels =
-      info?.channels === 1 ? "mono" :
-      info?.channels === 2 ? "stereo" :
-      undefined;
+        const body = {
+          title,
+          content: { chapters },
+          metadata: { media: { duration: info?.duration, fileSize: info?.fileSize } },
+        };
 
-    const iconVal = selectedIconMediaId ? `yoto:#${selectedIconMediaId}` : null;
+        const resp = await fetch("/api/yoto/create-playlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const txt = await resp.text();
+        if (!resp.ok) throw new Error(txt);
+        const created = JSON.parse(txt);
 
-    const chapters = [{
-      key: "01",
-      title,
-      display: iconVal ? { icon16x16: iconVal } : undefined,
-      tracks: [{
-        key: "01",
-        title,
-        overlayLabel: "1",
-        trackUrl: `yoto:#${transcoded.transcodedSha256}`,
-        duration: info?.duration ?? 1,
-        fileSize: info?.fileSize ?? 1,
-        format: info?.format || "mp3",
-        type: "audio",
-        ...(channels ? { channels } : {}),
-        display: iconVal ? { icon16x16: iconVal } : undefined,
-      }],
-    }];
+        setLog(
+          (l) => l + `
+Created playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`
+        );
+      } catch (e: any) {
+        setLog((l) => l + `
+Upload error: ${e?.message || e}`);
+      }
+    },
+    [selectedIconMediaId]
+  );
 
-    const resp = await fetch("/api/yoto/create-playlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        content: { chapters },
-        // (optional but nice): bubble media info to metadata
-        metadata: { media: { duration: info?.duration, fileSize: info?.fileSize } }
-      }),
-    });
+  // --- Batch helpers ---
+  const onFilesChosen = useCallback((files: FileList) => {
+    const arr = Array.from(files).filter((f) => f.type.startsWith("audio/"));
+    setSelectedFiles(arr);
+  }, []);
 
-    const text = await resp.text();
-    if (!resp.ok) throw new Error(text);
-    const created = JSON.parse(text);
+  const loadMine = useCallback(async () => {
+    try {
+      const j = await fetch("/api/yoto/content-mine").then((r) => r.json());
+      const list: MyCard[] = (j.cards || []).map((c: any) => ({
+        cardId: c.cardId,
+        title: c.title || c.metadata?.title || c.cardId,
+      }));
+      setMyCards(list);
+    } catch (e: any) {
+      setLog((l) => l + `
+Load my content error: ${e?.message || e}`);
+    }
+  }, []);
 
-    setLog(l => l + `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`);
-  } catch (e: any) {
-    setLog(l => l + `\nUpload error: ${e?.message || e}`);
-  }
-}, [selectedIconMediaId]);
+  const createPlaylistFromFiles = useCallback(async () => {
+    try {
+      if (selectedFiles.length === 0) return;
+      setLog((l) => l + `
+Batch uploading ${selectedFiles.length} files…`);
+      setUploadPct("");
+      const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
+      const tracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
+      const title = playlistTitle || `Playlist ${new Date().toLocaleString()}`;
+      const body = { title, content: { chapters: [{ key: "01", title, tracks }] } };
+      const resp = await fetch("/api/yoto/create-playlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const txt = await resp.text();
+      if (!resp.ok) throw new Error(txt);
+      const j = JSON.parse(txt);
+      setLog((l) => l + `
+Created playlist cardId: ${j?.card?.cardId || j?.cardId || "(see response)"}`);
+    } catch (e: any) {
+      setLog((l) => l + `
+Batch create error: ${e?.message || e}`);
+    }
+  }, [selectedFiles, selectedIconMediaId, playlistTitle]);
+
+  const appendFilesToCard = useCallback(async () => {
+    try {
+      if (!cardId || selectedFiles.length === 0) return;
+      setLog((l) => l + `
+Appending ${selectedFiles.length} files to ${cardId} …`);
+      setUploadPct("");
+      const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
+      const newTracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
+      const existing = await fetch(`/api/yoto/get-content?cardId=${encodeURIComponent(cardId)}`).then((r) => r.json());
+      const content = mergeTracksIntoContent(existing, newTracks);
+      const title = existing?.card?.title || existing?.title || playlistTitle || "";
+      const body = { cardId, title, content };
+      const resp = await fetch("/api/yoto/create-playlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const txt = await resp.text();
+      if (!resp.ok) throw new Error(txt);
+      const j = JSON.parse(txt);
+      setLog(
+        (l) => l + `
+Updated playlist ${cardId}. Tracks now: ${content.chapters?.[0]?.tracks?.length ?? "?"}`
+      );
+    } catch (e: any) {
+      setLog((l) => l + `
+Append error: ${e?.message || e}`);
+    }
+  }, [cardId, selectedFiles, selectedIconMediaId, playlistTitle]);
 
   const selectedIcon = useMemo(
     () => icons.find((i) => i.mediaId === selectedIconMediaId) || null,
@@ -159,7 +262,7 @@ const onFile = useCallback(async (f: File) => {
   return (
     <main className={styles.main}>
       <div className={styles.center}>
-        <h1>Yoto Tools (beta)</h1>
+        <h1>Yoto uploader</h1>
         <p>Authenticate, upload tracks, create playlists, set covers & icons</p>
       </div>
 
@@ -233,7 +336,7 @@ const onFile = useCallback(async (f: File) => {
           </div>
         </section>
 
-        {/* Upload */}
+        {/* Single upload */}
         <section className={styles.card}>
           <h3>3) Upload a track</h3>
           <input
@@ -251,6 +354,59 @@ const onFile = useCallback(async (f: File) => {
         <section className={styles.card}>
           <h3>4) Set a cover image</h3>
           <CoverForm onSubmit={onCoverUrl} />
+        </section>
+
+        {/* Batch: Create */}
+        <section className={styles.card}>
+          <h3>5) Batch: create a new playlist</h3>
+          <input
+            type="text"
+            placeholder="Playlist title (optional)"
+            value={playlistTitle}
+            onChange={(e) => setPlaylistTitle(e.target.value)}
+            style={{ width: "100%", marginBottom: 8 }}
+          />
+          <input type="file" accept="audio/*" multiple onChange={(e) => e.target.files && onFilesChosen(e.target.files)} />
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>
+            Selected: {selectedFiles.length} files {uploadPct && `(uploaded ${uploadPct})`}
+          </div>
+          <button disabled={!selectedFiles.length} onClick={createPlaylistFromFiles}>
+            Create playlist from files
+          </button>
+        </section>
+
+        {/* Batch: Append */}
+        <section className={styles.card}>
+          <h3>6) Batch: append to existing playlist</h3>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <input
+              placeholder="Existing cardId (e.g. 31yYU)"
+              value={cardId}
+              onChange={(e) => setCardId(e.target.value)}
+            />
+            <button onClick={loadMine}>Load my playlists</button>
+          </div>
+          {myCards.length > 0 && (
+            <div style={{ maxHeight: 160, overflow: "auto", border: "1px solid #eee", marginBottom: 8 }}>
+              {myCards.map((c) => (
+                <div
+                  key={c.cardId}
+                  style={{ display: "flex", gap: 8, padding: 6, cursor: "pointer" }}
+                  onClick={() => setCardId(c.cardId)}
+                >
+                  <code>{c.cardId}</code>
+                  <span>{c.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <input type="file" accept="audio/*" multiple onChange={(e) => e.target.files && onFilesChosen(e.target.files)} />
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>
+            Selected: {selectedFiles.length} files {uploadPct && `(uploaded ${uploadPct})`}
+          </div>
+          <button disabled={!cardId || !selectedFiles.length} onClick={appendFilesToCard}>
+            Append files to card
+          </button>
         </section>
       </div>
 
