@@ -1,7 +1,8 @@
+// File: pages/yoto/index.tsx
 import { useCallback, useMemo, useState } from "react";
 import styles from "../../styles/Home.module.css";
 import { uploadToYoto } from "../../utils/yotoUpload";
-import { uploadManySequential, buildTracksFrom, mergeTracksIntoContent } from "../../utils/yotoBatch";
+import { uploadManySequential, buildTracksFrom, mergeTracksIntoContent, dedupeFiles } from "../../utils/yotoBatch";
 
 // --- Types ---
 type DeviceInit = {
@@ -163,7 +164,7 @@ export default function YotoPage() {
   // --- Batch helpers ---
   const onFilesChosen = useCallback((files: FileList) => {
     const arr = Array.from(files).filter((f) => f.type.startsWith("audio/"));
-    setSelectedFiles(arr);
+    setSelectedFiles(dedupeFiles(arr));
   }, []);
 
   const loadMine = useCallback(async () => {
