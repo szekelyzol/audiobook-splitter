@@ -2,13 +2,16 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { exchangeCodeForTokens } from "../../../../lib/yoto-oauth";
 import { absoluteUrl } from "../../../../lib/url";
 
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 try {
 const { code } = req.query as { code?: string };
 if (!code) return res.status(400).send("Missing code");
 
+
 const redirectUri = absoluteUrl(req, process.env.YOTO_REDIRECT_PATH || "/api/yoto/auth/callback");
 const tokens = await exchangeCodeForTokens(code, redirectUri);
+
 
 res.setHeader(
 "Set-Cookie",
