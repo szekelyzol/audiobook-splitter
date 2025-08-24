@@ -1,8 +1,9 @@
-// File: utils/yotoBatch.ts (patched)
-// Helpers for building Yoto playlist payloads that match the first‑party web app
+// File: utils/yotoBatch.ts (icons via URL or yoto:#)
+// Builders & sanitizers that mirror Yoto's web app payloads
 // – One track per chapter
-// – Chapter display.icon16x16 always present (nullable allowed)
-// – Top‑level content fields are set by the page when composing the final body
+// – Chapter/track display.icon16x16 prefers full HTTPS icon URL for public icons
+//   and falls back to `yoto:#<mediaId>` for user-uploaded images
+// – Includes strict dedupe and merge helpers
 
 import { uploadToYoto } from "./yotoUpload";
 
@@ -57,8 +58,21 @@ function dedupeTracksByUrl(tracks: any[]) {
   return out;
 }
 
-function chapterDisplayFrom(mediaId?: string | null) {
-  return { icon16x16: mediaId ? `yoto:#${mediaId}` : null };
+// Prefer public icon URL when available; else fall back to yoto:# mediaId; allow null
+function iconRef(mediaId?: string | null, url?: string | null) {
+  return { icon16x16: url ?? (mediaId ? `yoto:#${mediaId}` : null) };
+}
+
+// Normalize any incoming icon string from existing content or input
+function normalizeIcon(value: any, fallbackMediaId?: string | null, fallbackUrl?: string | null) {
+  if (typeof value === "string" && value.length > 0) {
+    const v = value.trim();
+    if (v.startsWith("http://") || v.startsWith("https://")) return { icon16x16: v };
+    if (v.startsWith("yoto:#")) return { icon16x16: v };
+    // assume bare mediaId
+    return { icon16x16: `yoto:#${v}` };
+  }
+  return iconRef(fallbackMediaId, fallbackUrl);
 }
 
 // ---------- upload sequencing ----------
@@ -76,12 +90,10 @@ export async function uploadManySequential(files: File[], onProgress?: (i: numbe
 // ---------- builders (one track per chapter) ----------
 export function buildChaptersFrom(
   results: { file: File; transcoded: Transcoded }[],
-  iconMediaId?: string | null
+  iconMediaId?: string | null,
+  iconUrl?: string | null
 ) {
-  // BUGFIX: previously we wrongly deduped using trackUrl on wrapper objects ({track, title}),
-  // which collapsed the array to a single item. We now dedupe by SHA first, then build chapters.
   const uniq = dedupeBySha(results);
-
   const chapters: any[] = [];
   for (let i = 0; i < uniq.length; i++) {
     const r = uniq[i];
@@ -98,19 +110,18 @@ export function buildChaptersFrom(
       overlayLabel: String(i + 1),
       duration: typeof (info as any).duration === "number" ? (info as any).duration : 1,
       fileSize: typeof (info as any).fileSize === "number" ? (info as any).fileSize : 1,
+      display: iconRef(iconMediaId || null, iconUrl || null),
     };
     if (channels) track.channels = channels;
-    if (iconMediaId) track.display = { icon16x16: `yoto:#${iconMediaId}` };
 
     chapters.push({
       key: pad2(i),                  // "00", "01", ...
       title,
       overlayLabel: String(i + 1),
-      display: chapterDisplayFrom(iconMediaId || null),
+      display: iconRef(iconMediaId || null, iconUrl || null),
       tracks: [track],               // one track per chapter
     });
   }
-
   return chapters;
 }
 
@@ -128,8 +139,8 @@ export function sanitizeTrack(t: any) {
   };
   const ch = asChannels(t.channels);
   if (ch) out.channels = ch;
-  if (t?.display && t.display.hasOwnProperty("icon16x16")) {
-    out.display = { icon16x16: t.display.icon16x16 === null ? null : String(t.display.icon16x16) };
+  if (t?.display && Object.prototype.hasOwnProperty.call(t.display, "icon16x16")) {
+    out.display = normalizeIcon(t.display.icon16x16);
   }
   return out;
 }
@@ -140,14 +151,19 @@ export function sanitizeChapter(c: any) {
     key: String(c.key ?? "00"),
     title: String(c.title ?? ""),
     overlayLabel: String(c.overlayLabel ?? "1"),
-    display: chapterDisplayFrom(c?.display?.icon16x16 ? String(c.display.icon16x16).replace(/^yoto:#/, "").split("#").pop() : null),
+    display: normalizeIcon(c?.display?.icon16x16 ?? null),
     tracks: dedupeTracksByUrl(tracks),
   };
   return out;
 }
 
 // ---------- merger (append chapters; re-key from 00; avoid dup trackUrls) ----------
-export function mergeChaptersIntoContent(existing: any, newChapters: any[], defaultIconMediaId?: string | null) {
+export function mergeChaptersIntoContent(
+  existing: any,
+  newChapters: any[],
+  defaultIconMediaId?: string | null,
+  defaultIconUrl?: string | null
+) {
   const E = (existing && existing.card && existing.card.content) || existing?.content || {};
   const inChapters = Array.isArray(E.chapters) ? E.chapters : [];
 
@@ -174,9 +190,9 @@ export function mergeChaptersIntoContent(existing: any, newChapters: any[], defa
     }
     if (filteredTracks.length > 0) {
       sc.tracks = filteredTracks;
-      // ensure chapter display present
-      if (!sc.display || !sc.display.hasOwnProperty("icon16x16")) {
-        sc.display = chapterDisplayFrom(defaultIconMediaId || null);
+      // ensure chapter display present (prefer URL)
+      if (!sc.display || !Object.prototype.hasOwnProperty.call(sc.display, "icon16x16")) {
+        sc.display = iconRef(defaultIconMediaId || null, defaultIconUrl || null);
       }
       incoming.push(sc);
     }
@@ -200,16 +216,17 @@ export function mergeChaptersIntoContent(existing: any, newChapters: any[], defa
     chapters: merged,
     // Keep config conservative; page may extend if needed
     config: { onlineOnly: false, ...(E.config || {}) },
-    // The page should also include: activity: "yoto_Player", version: "1"
+    // Page should include: activity: "yoto_Player", version: "1", playbackType if desired
   };
 }
 
-// ---------- Back‑compat thin wrappers (safe no‑ops for old call sites) ----------
+// ---------- Back‑compat thin wrappers ----------
 export function buildTracksFrom(
   results: { file: File; transcoded: Transcoded }[],
-  iconMediaId?: string | null
+  iconMediaId?: string | null,
+  iconUrl?: string | null
 ) {
-  const chapters = buildChaptersFrom(results, iconMediaId);
+  const chapters = buildChaptersFrom(results, iconMediaId, iconUrl);
   const tracks: any[] = [];
   for (let i = 0; i < chapters.length; i++) {
     const t = chapters[i].tracks[0];
@@ -219,11 +236,18 @@ export function buildTracksFrom(
   return dedupeTracksByUrl(tracks);
 }
 
-export function mergeTracksIntoContent(existing: any, newTracks: any[], chapterIconMediaId?: string | null) {
+export function mergeTracksIntoContent(
+  existing: any,
+  newTracks: any[],
+  chapterIconMediaId?: string | null,
+  chapterIconUrl?: string | null
+) {
   const chapters: any[] = [];
   for (let i = 0; i < newTracks.length; i++) {
     const t = sanitizeTrack(newTracks[i]);
-    chapters.push({ key: pad2(i), title: String(t.title || ""), overlayLabel: String(i + 1), display: chapterDisplayFrom(chapterIconMediaId || null), tracks: [t] });
+    const title = String(t.title || "");
+    const display = iconRef(chapterIconMediaId || null, chapterIconUrl || null);
+    chapters.push({ key: pad2(i), title, overlayLabel: String(i + 1), display, tracks: [t] });
   }
-  return mergeChaptersIntoContent(existing, chapters, chapterIconMediaId || null);
+  return mergeChaptersIntoContent(existing, chapters, chapterIconMediaId || null, chapterIconUrl || null);
 }
