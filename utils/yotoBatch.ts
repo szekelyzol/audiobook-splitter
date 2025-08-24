@@ -6,12 +6,24 @@ export type Transcoded = {
     duration?: number;
     fileSize?: number;
     format?: string;
-    channels?: number;
+    channels?: number | "mono" | "stereo";
     metadata?: { title?: string };
   };
 };
 
-// --- Utilities ---
+// --- Small helpers ---
+function pad2(n: number | string): string {
+  const s = String(n);
+  return s.length < 2 ? "0" + s : s;
+}
+
+function asChannels(v: any): "mono" | "stereo" | undefined {
+  if (v === 1 || v === "1" || v === "mono") return "mono";
+  if (v === 2 || v === "2" || v === "stereo") return "stereo";
+  return undefined;
+}
+
+// Deduplicate user-selected files by name+size+mtime
 export function dedupeFiles(files: File[]): File[] {
   const seen: { [k: string]: true } = {};
   const out: File[] = [];
@@ -26,46 +38,21 @@ export function dedupeFiles(files: File[]): File[] {
   return out;
 }
 
-function asChannels(v: any): "mono" | "stereo" | undefined {
-  if (v === 1 || v === "1" || v === "mono") return "mono";
-  if (v === 2 || v === "2" || v === "stereo") return "stereo";
-  return undefined;
-}
-
-export function sanitizeTrack(t: any) {
-  const channels = asChannels(t.channels);
-  const display = t?.display && t.display.icon16x16 ? { icon16x16: String(t.display.icon16x16) } : undefined;
-  return {
-    key: String(t.key ?? "01"),
-    title: String(t.title ?? "Track"),
-    overlayLabel: String(t.overlayLabel ?? "1"),
-    trackUrl: String(t.trackUrl),
-    duration: typeof t.duration === "number" ? t.duration : 1,
-    fileSize: typeof t.fileSize === "number" ? t.fileSize : 1,
-    format: String(t.format || "aac"),
-    type: "audio" as const,
-    ...(channels ? { channels } : {}),
-    ...(display ? { display } : {}),
-  };
-}
-
-export function sanitizeChapter(c: any) {
-  const display = c?.display && c.display.icon16x16 ? { icon16x16: String(c.display.icon16x16) } : undefined;
-  const tracksIn = Array.isArray(c.tracks) ? c.tracks : [];
-  const tracksOut = new Array(tracksIn.length);
-  for (let i = 0; i < tracksIn.length; i++) {
-    tracksOut[i] = sanitizeTrack(tracksIn[i]);
+// Deduplicate transcoded results by their final content hash (transcodedSha256)
+export function dedupeBySha<T extends { transcoded: { transcodedSha256: string } }>(results: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (let i = 0; i < results.length; i++) {
+    const sha = results[i].transcoded.transcodedSha256;
+    if (!seen.has(sha)) {
+      seen.add(sha);
+      out.push(results[i]);
+    }
   }
-  const out: any = {
-    key: String(c.key ?? "01"),
-    title: String(c.title ?? ""),
-    tracks: tracksOut,
-  };
-  if (display) out.display = display;
   return out;
 }
 
-// --- Batch upload flow ---
+// Upload many files in sequence to preserve order. Returns unique-by-SHA results.
 export async function uploadManySequential(
   files: File[],
   onProgress?: (i: number, total: number) => void
@@ -77,23 +64,25 @@ export async function uploadManySequential(
     const { transcoded } = await uploadToYoto(uniques[i]);
     results.push({ file: uniques[i], transcoded });
   }
-  return results;
+  return dedupeBySha(results);
 }
 
+// Build Yoto track objects from upload results
 export function buildTracksFrom(
   results: { file: File; transcoded: Transcoded }[],
   iconMediaId?: string
 ) {
-  const tracks = new Array(results.length);
+  const tracks: any[] = [];
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
     const info = r.transcoded.transcodedInfo || {};
     const title = (info && info.metadata && info.metadata.title) || r.file.name.replace(/\.[^.]+$/, "");
     const overlay = String(i + 1);
-    const key = (i + 1).toString().padStart(2, "0");
-    const channels = asChannels(info && (info as any).channels);
+    const key = pad2(i + 1);
+    const channels = asChannels((info as any).channels);
     const display = iconMediaId ? { icon16x16: `yoto:#${iconMediaId}` } : undefined;
-    const tr = {
+
+    const track: any = {
       key,
       title,
       overlayLabel: overlay,
@@ -102,57 +91,82 @@ export function buildTracksFrom(
       fileSize: (info && info.fileSize) || 1,
       format: (info && info.format) || "aac",
       type: "audio",
-      ...(channels ? { channels } : {}),
-      ...(display ? { display } : {}),
     };
-    tracks[i] = tr;
+    if (channels) track.channels = channels;
+    if (display) track.display = display;
+
+    tracks.push(track);
   }
   return tracks;
 }
 
+// Strictly sanitize a track object to only allowed keys
+export function sanitizeTrack(t: any) {
+  const out: any = {
+    key: String(t.key ?? "01"),
+    title: String(t.title ?? "Track"),
+    overlayLabel: String(t.overlayLabel ?? "1"),
+    trackUrl: String(t.trackUrl),
+    duration: typeof t.duration === "number" ? t.duration : 1,
+    fileSize: typeof t.fileSize === "number" ? t.fileSize : 1,
+    format: String(t.format || "aac"),
+    type: "audio",
+  };
+  const ch = asChannels(t.channels);
+  if (ch) out.channels = ch;
+  if (t?.display?.icon16x16) out.display = { icon16x16: String(t.display.icon16x16) };
+  return out;
+}
+
+// Sanitize a chapter object
+export function sanitizeChapter(c: any) {
+  const tracksIn = Array.isArray(c.tracks) ? c.tracks : [];
+  const tracksOut = new Array(tracksIn.length);
+  for (let i = 0; i < tracksIn.length; i++) tracksOut[i] = sanitizeTrack(tracksIn[i]);
+  const out: any = {
+    key: String(c.key ?? "01"),
+    title: String(c.title ?? ""),
+    tracks: tracksOut,
+  };
+  if (c?.display?.icon16x16) out.display = { icon16x16: String(c.display.icon16x16) };
+  return out;
+}
+
+// Merge newly uploaded tracks into an existing card's content (chapter 1)
 export function mergeTracksIntoContent(
   existing: any,
   newTracks: any[],
   chapterIconMediaId?: string
 ) {
-  const content = (existing && (existing.card && existing.card.content)) || existing?.content || {};
-  const chaptersIn = Array.isArray(content.chapters) ? content.chapters : [];
+  const E = (existing && existing.card && existing.card.content) || existing?.content || {};
+  const chaptersIn = Array.isArray(E.chapters) ? E.chapters : [];
 
   if (chaptersIn.length === 0) {
-    const chapter = sanitizeChapter({
+    const ch = sanitizeChapter({
       key: "01",
-      title: (content && content.title) || "",
+      title: E?.title || "",
       display: chapterIconMediaId ? { icon16x16: `yoto:#${chapterIconMediaId}` } : undefined,
       tracks: newTracks,
     });
-    return {
-      chapters: [chapter],
-      config: { resumeTimeout: 2592000 },
-      playbackType: "linear",
-    };
+    return { chapters: [ch], config: { resumeTimeout: 2592000 }, playbackType: "linear" };
   }
 
-  // Sanitize the first chapter and append
   const first = sanitizeChapter(chaptersIn[0]);
-  const startIdx = Array.isArray(first.tracks) ? first.tracks.length : 0;
-  const appended = new Array(newTracks.length);
-  for (let i = 0; i < newTracks.length; i++) {
-    const tr = { ...newTracks[i] };
-    tr.key = (startIdx + i + 1).toString().padStart(2, "0");
-    tr.overlayLabel = String(startIdx + i + 1);
-    appended[i] = sanitizeTrack(tr);
-  }
   if ((!first.display || !first.display.icon16x16) && chapterIconMediaId) {
     first.display = { ...(first.display || {}), icon16x16: `yoto:#${chapterIconMediaId}` };
   }
-  first.tracks = [...(first.tracks || []), ...appended];
 
-  const chaptersOut = chaptersIn.slice();
-  chaptersOut[0] = first;
+  const start = Array.isArray(first.tracks) ? first.tracks.length : 0;
+  for (let i = 0; i < newTracks.length; i++) {
+    const raw = { ...newTracks[i] };
+    raw.key = pad2(start + i + 1);
+    raw.overlayLabel = String(start + i + 1);
+    first.tracks.push(sanitizeTrack(raw));
+  }
 
   return {
-    chapters: chaptersOut,
-    config: { ...(content.config || {}), resumeTimeout: content?.config?.resumeTimeout ?? 2592000 },
-    playbackType: content.playbackType || "linear",
+    chapters: [first],
+    config: { ...(E.config || {}), resumeTimeout: E?.config?.resumeTimeout ?? 2592000 },
+    playbackType: E.playbackType || "linear",
   };
 }

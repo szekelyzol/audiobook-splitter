@@ -1,14 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// minimal pass-through to Yoto /content with better error handling:
+// Transparent proxy to Yoto's /content endpoint.
+// - Create new playlist: omit cardId in body
+// - Update existing playlist: include cardId in body
+// Returns upstream status + JSON body verbatim so the client can see exact errors.
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   const token = req.cookies["yoto_access"];
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const y = await fetch("https://api.yotoplay.com/content", {
+    const upstream = await fetch("https://api.yotoplay.com/content", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -18,17 +25,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify(req.body),
     });
 
-    const txt = await y.text();
-    if (!y.ok) {
-      // Surface Yoto’s error body verbatim to the client as JSON
-      let parsed: any = null;
-      try { parsed = JSON.parse(txt); } catch {}
-      return res.status(y.status).json(parsed || { error: txt || "Server error" });
+    const text = await upstream.text();
+
+    // Always reply with JSON so the client can safely .json() or read text for debugging
+    res.status(upstream.status);
+    res.setHeader("Content-Type", "application/json");
+
+    // If upstream returned an empty body, send a minimal JSON object
+    if (!text) {
+      return res.send(JSON.stringify({ ok: upstream.ok }));
     }
 
-    // Success → send their JSON straight back
-    return res.status(200).json(JSON.parse(txt));
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message || String(err) });
+    return res.send(text);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
   }
 }
