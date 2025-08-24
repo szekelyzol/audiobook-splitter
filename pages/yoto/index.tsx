@@ -332,7 +332,7 @@ export default function YotoPage() {
           />
           <p style={{ fontSize: 12, opacity: 0.8 }}>
             We hash locally, request a signed URL, PUT the file, poll for transcoding, then create a playlist
-            using the transcoded SHA. Structure mirrors Yoto's web app: one chapter per track.
+            using the transcoded SHA. Structure mirrors the Yoto web app: one chapter per track.
           </p>
         </section>
 
