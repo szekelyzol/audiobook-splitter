@@ -2,7 +2,13 @@
 import { useCallback, useMemo, useState } from "react";
 import styles from "../../styles/Home.module.css";
 import { uploadToYoto } from "../../utils/yotoUpload";
-import { uploadManySequential, buildTracksFrom, mergeTracksIntoContent, dedupeFiles } from "../../utils/yotoBatch";
+import {
+  uploadManySequential,
+  buildChaptersFrom,
+  mergeChaptersIntoContent,
+  dedupeFiles,
+} from "../../utils/yotoBatch";
+import { composeCreateBody, composeUpdateBody } from "../../utils/yotoContent";
 
 // --- Types ---
 type DeviceInit = {
@@ -15,14 +21,9 @@ type DeviceInit = {
 
 type Icon = { displayIconId: string; mediaId: string; title: string; url: string };
 
-type TranscodeInfo = {
-  transcodedSha256: string;
-  duration?: number;
-  fileSize?: number;
-  format?: string;
-};
-
 type MyCard = { cardId: string; title: string };
+
+type Transcoded = { transcodedSha256: string; transcodedInfo?: any };
 
 export default function YotoPage() {
   // Feature flag (do not early-return before hooks)
@@ -97,50 +98,25 @@ export default function YotoPage() {
     }
   }, []);
 
-  // --- Single-file Upload & playlist ---
+  // --- Single-file: create a new playlist (one chapter / one track) ---
   const onFile = useCallback(
     async (f: File) => {
       try {
         setLog((l) => l + `\nUploading ${f.name} …`);
-        const { transcoded }: { transcoded: TranscodeInfo & { transcodedInfo?: any } } = await uploadToYoto(f);
+        const { transcoded }: { transcoded: Transcoded } = await uploadToYoto(f);
         setLog((l) => l + `\nTranscoded: ${transcoded.transcodedSha256}`);
 
-        const info = (transcoded as any).transcodedInfo || {};
-        const title = info?.metadata?.title || f.name.replace(/\.[^.]+$/, "");
-        const channels = info?.channels === 1 ? "mono" : info?.channels === 2 ? "stereo" : undefined;
-        const iconVal = selectedIconMediaId ? `yoto:#${selectedIconMediaId}` : null;
+        // Build one-track-per-chapter from this single file
+        const chapters = buildChaptersFrom([{ file: f, transcoded }], selectedIconMediaId);
+        const title = playlistTitle || (chapters[0]?.title || f.name.replace(/\.[^.]+$/, ""));
 
-        const chapters = [
-          {
-            key: "01",
-            title,
-            display: iconVal ? { icon16x16: iconVal } : undefined,
-            tracks: [
-              {
-                key: "01",
-                title,
-                trackUrl: `yoto:#${transcoded.transcodedSha256}`,
-                duration: info?.duration ?? 1,
-                fileSize: info?.fileSize ?? 1,
-                format: info?.format || "aac",
-                type: "audio",
-                overlayLabel: "1",
-                ...(channels ? { channels } : {}),
-                display: iconVal ? { icon16x16: iconVal } : undefined,
-              },
-            ],
-          },
-        ];
+        const totalDuration = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.duration || 0), 0);
+        const totalSize = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.fileSize || 0), 0);
 
-        const body = {
-          title,
-          content: {
-            chapters,
-            config: { resumeTimeout: 2592000 },
-            playbackType: "linear",
-          },
-          metadata: { media: { duration: info?.duration, fileSize: info?.fileSize } },
-        };
+        const body = composeCreateBody(title, chapters, {
+          durationTotal: totalDuration,
+          fileSizeTotal: totalSize,
+        });
 
         const resp = await fetch("/api/yoto/create-playlist", {
           method: "POST",
@@ -151,14 +127,12 @@ export default function YotoPage() {
         if (!resp.ok) throw new Error(txt);
         const created = JSON.parse(txt);
 
-        setLog(
-          (l) => l + `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`
-        );
+        setLog((l) => l + `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`);
       } catch (e: any) {
         setLog((l) => l + `\nUpload error: ${e?.message || e}`);
       }
     },
-    [selectedIconMediaId]
+    [selectedIconMediaId, playlistTitle]
   );
 
   // --- Batch helpers ---
@@ -186,31 +160,17 @@ export default function YotoPage() {
       setLog((l) => l + `\nBatch uploading ${selectedFiles.length} files…`);
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
-      const tracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
-      const title = playlistTitle || `Playlist ${new Date().toLocaleString()}`;
-      const chapterIcon = selectedIconMediaId ? { icon16x16: `yoto:#${selectedIconMediaId}` } : undefined;
 
-      const body = {
-        title,
-        content: {
-          chapters: [
-            {
-              key: "01",
-              title,
-              display: chapterIcon, // required by docs
-              tracks,
-            },
-          ],
-          config: { resumeTimeout: 2592000 },
-          playbackType: "linear",
-        },
-        metadata: {
-          media: {
-            duration: tracks.reduce((s: number, t: any) => s + (t.duration || 0), 0),
-            fileSize: tracks.reduce((s: number, t: any) => s + (t.fileSize || 0), 0),
-          },
-        },
-      };
+      // Build chapters (one per file)
+      const chapters = buildChaptersFrom(res as any, selectedIconMediaId);
+      const title = playlistTitle || `Playlist ${new Date().toLocaleString()}`;
+      const totalDuration = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.duration || 0), 0);
+      const totalSize = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.fileSize || 0), 0);
+
+      const body = composeCreateBody(title, chapters, {
+        durationTotal: totalDuration,
+        fileSizeTotal: totalSize,
+      });
 
       const resp = await fetch("/api/yoto/create-playlist", {
         method: "POST",
@@ -232,11 +192,28 @@ export default function YotoPage() {
       setLog((l) => l + `\nAppending ${selectedFiles.length} files to ${cardId} …`);
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
-      const newTracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
+
+      // Build new chapters for these files
+      const newChapters = buildChaptersFrom(res as any, selectedIconMediaId);
+
+      // Fetch the existing card (to get its current content)
       const existing = await fetch(`/api/yoto/get-content?cardId=${encodeURIComponent(cardId)}`).then((r) => r.json());
-      const content = mergeTracksIntoContent(existing, newTracks, selectedIconMediaId || undefined);
+
+      // Merge: append chapters; re-key from 00; ensure chapter display present
+      const mergedContent = mergeChaptersIntoContent(existing, newChapters, selectedIconMediaId);
+
       const title = existing?.card?.title || existing?.title || playlistTitle || "";
-      const body = { cardId, title, content };
+      const totalDuration = (mergedContent.chapters || []).reduce((s: number, ch: any) => s + (ch.tracks?.[0]?.duration || 0), 0);
+      const totalSize = (mergedContent.chapters || []).reduce((s: number, ch: any) => s + (ch.tracks?.[0]?.fileSize || 0), 0);
+
+      const body = composeUpdateBody(cardId, title, {
+        chapters: mergedContent.chapters,
+        config: mergedContent.config,
+      }, {
+        durationTotal: totalDuration,
+        fileSizeTotal: totalSize,
+      });
+
       const resp = await fetch("/api/yoto/create-playlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -245,9 +222,7 @@ export default function YotoPage() {
       const txt = await resp.text();
       if (!resp.ok) throw new Error(txt);
       const j = JSON.parse(txt);
-      setLog(
-        (l) => l + `\nUpdated playlist ${cardId}. Tracks now: ${content.chapters?.[0]?.tracks?.length ?? "?"}`
-      );
+      setLog((l) => l + `\nUpdated playlist ${cardId}. Chapters now: ${mergedContent.chapters?.length ?? "?"}`);
     } catch (e: any) {
       setLog((l) => l + `\nAppend error: ${e?.message || e}`);
     }
@@ -274,7 +249,7 @@ export default function YotoPage() {
     <main className={styles.main}>
       <div className={styles.center}>
         <h1>Yoto Tools (beta)</h1>
-        <p>Authenticate, upload tracks, create playlists, set covers & icons</p>
+        <p>Authenticate, upload, create playlists, set covers & icons</p>
       </div>
 
       <div className={styles.grid}>
@@ -349,15 +324,15 @@ export default function YotoPage() {
 
         {/* Single upload */}
         <section className={styles.card}>
-          <h3>3) Upload a track</h3>
+          <h3>3) Upload a single track → new playlist</h3>
           <input
             type="file"
             accept="audio/*"
             onChange={(e) => e.target.files && onFile(e.target.files[0])}
           />
           <p style={{ fontSize: 12, opacity: 0.8 }}>
-            We hash locally, request a signed URL, PUT the file directly to cloud storage, then poll for
-            transcoding. When ready, we create a playlist using the transcoded SHA.
+            We hash locally, request a signed URL, PUT the file, poll for transcoding, then create a playlist
+            using the transcoded SHA. Structure mirrors Yoto's web app: one chapter per track.
           </p>
         </section>
 
@@ -424,7 +399,7 @@ export default function YotoPage() {
       <pre
         style={{
           whiteSpace: "pre-wrap",
-          maxHeight: 280,
+          maxHeight: 320,
           overflow: "auto",
           background: "#fafafa",
           padding: 12,
