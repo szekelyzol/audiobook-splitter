@@ -209,9 +209,6 @@ export default function YotoPage() {
       const body = composeUpdateBody(cardId, title, {
         chapters: mergedContent.chapters,
         config: mergedContent.config,
-      }, {
-        durationTotal: totalDuration,
-        fileSizeTotal: totalSize,
       });
 
       const resp = await fetch("/api/yoto/create-playlist", {

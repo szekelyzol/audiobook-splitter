@@ -39,25 +39,18 @@ export function composeCreateBody(
 export function composeUpdateBody(
   cardId: string,
   title: string,
-  contentLike: ContentLike,
-  opts?: { coverImageL?: string; durationTotal?: number; fileSizeTotal?: number }
+  contentLike: { chapters: any[]; config?: any },
+  // remove/omit the opts param for metadata to keep update minimal
 ) {
-  const content = {
-    activity: "yoto_Player",
-    version: "1",
-    chapters: contentLike.chapters,
-    config: contentLike.config || { onlineOnly: false },
+  return {
+    cardId,
+    title,
+    content: {
+      activity: "yoto_Player",
+      version: "1",
+      playbackType: "linear",
+      chapters: contentLike.chapters,
+      config: contentLike.config ?? { onlineOnly: false },
+    },
   };
-
-  const body: any = { cardId, title, content, metadata: {} };
-  if (opts?.coverImageL) {
-    body.metadata.cover = { imageL: opts.coverImageL };
-  }
-  if (opts?.durationTotal || opts?.fileSizeTotal) {
-    body.metadata.media = {
-      duration: opts?.durationTotal || 0,
-      fileSize: opts?.fileSizeTotal || 0,
-    };
-  }
-  return body;
 }
