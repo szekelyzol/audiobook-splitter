@@ -1,4 +1,4 @@
-// File: pages/yoto/index.tsx
+// File: pages/yoto/index.tsx (patched)
 import { useCallback, useMemo, useState } from "react";
 import styles from "../../styles/Home.module.css";
 import { uploadToYoto } from "../../utils/yotoUpload";
@@ -108,6 +108,7 @@ export default function YotoPage() {
 
         // Build one-track-per-chapter from this single file
         const chapters = buildChaptersFrom([{ file: f, transcoded }], selectedIconMediaId);
+        setLog((l) => l + `\nCreating playlist with ${chapters.length} chapter(s)…`);
         const title = playlistTitle || (chapters[0]?.title || f.name.replace(/\.[^.]+$/, ""));
 
         const totalDuration = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.duration || 0), 0);
@@ -161,8 +162,10 @@ export default function YotoPage() {
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
 
-      // Build chapters (one per file)
+      // Build chapters (one per file) — relies on patched buildChaptersFrom
       const chapters = buildChaptersFrom(res as any, selectedIconMediaId);
+      setLog((l) => l + `\nCreating playlist with ${chapters.length} chapter(s)…`);
+
       const title = playlistTitle || `Playlist ${new Date().toLocaleString()}`;
       const totalDuration = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.duration || 0), 0);
       const totalSize = chapters.reduce((s, ch) => s + (ch.tracks?.[0]?.fileSize || 0), 0);
@@ -193,13 +196,10 @@ export default function YotoPage() {
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
 
-      // Build new chapters for these files
+      // Build new chapters and merge into existing content
       const newChapters = buildChaptersFrom(res as any, selectedIconMediaId);
 
-      // Fetch the existing card (to get its current content)
       const existing = await fetch(`/api/yoto/get-content?cardId=${encodeURIComponent(cardId)}`).then((r) => r.json());
-
-      // Merge: append chapters; re-key from 00; ensure chapter display present
       const mergedContent = mergeChaptersIntoContent(existing, newChapters, selectedIconMediaId);
 
       const title = existing?.card?.title || existing?.title || playlistTitle || "";

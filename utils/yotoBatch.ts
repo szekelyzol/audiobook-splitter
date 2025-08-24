@@ -1,4 +1,4 @@
-// File: utils/yotoBatch.ts
+// File: utils/yotoBatch.ts (patched)
 // Helpers for building Yoto playlist payloads that match the first‑party web app
 // – One track per chapter
 // – Chapter display.icon16x16 always present (nullable allowed)
@@ -78,37 +78,36 @@ export function buildChaptersFrom(
   results: { file: File; transcoded: Transcoded }[],
   iconMediaId?: string | null
 ) {
-  const chapters: any[] = [];
-  const uniqueByUrl = dedupeTracksByUrl(
-    results.map((r, idx) => {
-      const info = r.transcoded.transcodedInfo || {};
-      const title = (info && (info as any).metadata && (info as any).metadata.title) || r.file.name.replace(/\.[^.]+$/, "");
-      const channels = asChannels((info as any).channels);
-      const track: any = {
-        key: "01",
-        title,
-        format: String((info as any).format || "aac"),
-        trackUrl: `yoto:#${r.transcoded.transcodedSha256}`,
-        type: "audio",
-        overlayLabel: String(idx + 1),
-        duration: typeof (info as any).duration === "number" ? (info as any).duration : 1,
-        fileSize: typeof (info as any).fileSize === "number" ? (info as any).fileSize : 1,
-      };
-      if (channels) track.channels = channels;
-      if (iconMediaId) track.display = { icon16x16: `yoto:#${iconMediaId}` };
-      return { track, title };
-    })
-  );
+  // BUGFIX: previously we wrongly deduped using trackUrl on wrapper objects ({track, title}),
+  // which collapsed the array to a single item. We now dedupe by SHA first, then build chapters.
+  const uniq = dedupeBySha(results);
 
-  for (let i = 0; i < uniqueByUrl.length; i++) {
-    const t = uniqueByUrl[i].track;
-    const title = uniqueByUrl[i].title;
+  const chapters: any[] = [];
+  for (let i = 0; i < uniq.length; i++) {
+    const r = uniq[i];
+    const info = r.transcoded.transcodedInfo || {};
+    const title = (info && (info as any).metadata && (info as any).metadata.title) || r.file.name.replace(/\.[^.]+$/, "");
+    const channels = asChannels((info as any).channels);
+
+    const track: any = {
+      key: "01",
+      title,
+      format: String((info as any).format || "aac"),
+      trackUrl: `yoto:#${r.transcoded.transcodedSha256}`,
+      type: "audio",
+      overlayLabel: String(i + 1),
+      duration: typeof (info as any).duration === "number" ? (info as any).duration : 1,
+      fileSize: typeof (info as any).fileSize === "number" ? (info as any).fileSize : 1,
+    };
+    if (channels) track.channels = channels;
+    if (iconMediaId) track.display = { icon16x16: `yoto:#${iconMediaId}` };
+
     chapters.push({
       key: pad2(i),                  // "00", "01", ...
       title,
       overlayLabel: String(i + 1),
       display: chapterDisplayFrom(iconMediaId || null),
-      tracks: [t],                   // one track per chapter
+      tracks: [track],               // one track per chapter
     });
   }
 
@@ -206,15 +205,11 @@ export function mergeChaptersIntoContent(existing: any, newChapters: any[], defa
 }
 
 // ---------- Back‑compat thin wrappers (safe no‑ops for old call sites) ----------
-// Older code paths that built a single chapter with many tracks can keep calling these,
-// but the recommended flow is to switch to buildChaptersFrom + mergeChaptersIntoContent.
 export function buildTracksFrom(
   results: { file: File; transcoded: Transcoded }[],
   iconMediaId?: string | null
 ) {
   const chapters = buildChaptersFrom(results, iconMediaId);
-  // Flatten back to a single chapter's tracks for legacy callers
-  // (still deduped by URL). Use the first N tracks.
   const tracks: any[] = [];
   for (let i = 0; i < chapters.length; i++) {
     const t = chapters[i].tracks[0];
@@ -225,7 +220,6 @@ export function buildTracksFrom(
 }
 
 export function mergeTracksIntoContent(existing: any, newTracks: any[], chapterIconMediaId?: string | null) {
-  // Convert legacy newTracks[] into chapters and delegate
   const chapters: any[] = [];
   for (let i = 0; i < newTracks.length; i++) {
     const t = sanitizeTrack(newTracks[i]);
