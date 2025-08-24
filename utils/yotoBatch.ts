@@ -3,11 +3,20 @@ import { uploadToYoto } from "./yotoUpload";
 
 export type Transcoded = {
 transcodedSha256: string;
-transcodedInfo?: { duration?: number; fileSize?: number; format?: string; channels?: number; metadata?: { title?: string } };
+transcodedInfo?: {
+duration?: number;
+fileSize?: number;
+format?: string;
+channels?: number;
+metadata?: { title?: string };
+};
 };
 
 
-export async function uploadManySequential(files: File[], onProgress?: (i: number, total: number) => void) {
+export async function uploadManySequential(
+files: File[],
+onProgress?: (i: number, total: number) => void
+) {
 const results: { file: File; transcoded: Transcoded }[] = [];
 for (let i = 0; i < files.length; i++) {
 onProgress?.(i + 1, files.length);
@@ -18,7 +27,10 @@ return results;
 }
 
 
-export function buildTracksFrom(results: { file: File; transcoded: Transcoded }[], iconMediaId?: string | null) {
+export function buildTracksFrom(
+results: { file: File; transcoded: Transcoded }[],
+iconMediaId?: string
+) {
 const tracks = results.map((r, idx) => {
 const info = r.transcoded.transcodedInfo || {};
 const title = info?.metadata?.title || r.file.name.replace(/\.[^.]+$/, "");
@@ -33,7 +45,7 @@ overlayLabel: overlay,
 trackUrl: `yoto:#${r.transcoded.transcodedSha256}`,
 duration: info?.duration ?? 1,
 fileSize: info?.fileSize ?? 1,
-format: info?.format || "mp3",
+format: info?.format || "aac",
 type: "audio",
 ...(channels ? { channels } : {}),
 ...(display ? { display } : {}),
@@ -43,13 +55,27 @@ return tracks;
 }
 
 
-export function mergeTracksIntoContent(existing: any, newTracks: any[]) {
+export function mergeTracksIntoContent(
+existing: any,
+newTracks: any[],
+chapterIconMediaId?: string
+) {
 const content = existing?.card?.content || existing?.content || {};
 const chapters = Array.isArray(content.chapters) ? content.chapters.slice() : [];
+
+
 if (chapters.length === 0) {
-chapters.push({ key: "01", title: content?.title || "", tracks: newTracks });
+chapters.push({
+key: "01",
+title: content?.title || "",
+display: chapterIconMediaId ? { icon16x16: `yoto:#${chapterIconMediaId}` } : undefined,
+tracks: newTracks,
+});
 } else {
 const first = { ...chapters[0] };
+if (!first.display?.icon16x16 && chapterIconMediaId) {
+first.display = { ...(first.display || {}), icon16x16: `yoto:#${chapterIconMediaId}` };
+}
 const startIdx = Array.isArray(first.tracks) ? first.tracks.length : 0;
 const remapped = newTracks.map((t, i) => ({
 ...t,
@@ -59,5 +85,12 @@ overlayLabel: String(startIdx + i + 1),
 first.tracks = [...(first.tracks || []), ...remapped];
 chapters[0] = first;
 }
-return { ...content, chapters };
+
+
+return {
+...content,
+chapters,
+config: { ...(content.config || {}), resumeTimeout: content?.config?.resumeTimeout ?? 2592000 },
+playbackType: content.playbackType || "linear",
+};
 }

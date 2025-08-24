@@ -50,8 +50,7 @@ export default function YotoPage() {
       const r: DeviceInit = await fetch("/api/yoto/auth/device-init").then((r) => r.json());
       setDeviceInit(r);
     } catch (e: any) {
-      setLog((l) => l + `
-Device init error: ${e?.message || e}`);
+      setLog((l) => l + `\nDevice init error: ${e?.message || e}`);
     }
   }, []);
 
@@ -62,15 +61,13 @@ Device init error: ${e?.message || e}`);
         `/api/yoto/auth/device-poll?device_code=${encodeURIComponent(deviceInit.device_code)}`
       );
       if (r.status === 200) {
-        setLog((l) => l + "Device auth complete. You can now use the API.");
+        setLog((l) => l + "\nDevice auth complete. You can now use the API.");
       } else {
         const j = await r.json();
-        setLog((l) => l + `
-Pending: ${JSON.stringify(j.error)}`);
+        setLog((l) => l + `\nPending: ${JSON.stringify(j.error)}`);
       }
     } catch (e: any) {
-      setLog((l) => l + `
-Device poll error: ${e?.message || e}`);
+      setLog((l) => l + `\nDevice poll error: ${e?.message || e}`);
     }
   }, [deviceInit]);
 
@@ -82,8 +79,7 @@ Device poll error: ${e?.message || e}`);
       setIcons(list);
       setSelectedIconMediaId((prev) => prev || (list[0]?.mediaId ?? null));
     } catch (e: any) {
-      setLog((l) => l + `
-Icon load error: ${e?.message || e}`);
+      setLog((l) => l + `\nIcon load error: ${e?.message || e}`);
     }
   }, []);
 
@@ -94,11 +90,9 @@ Icon load error: ${e?.message || e}`);
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: url }),
       }).then((r) => r.json());
-      setLog((l) => l + `
-Uploaded cover image mediaId: ${r?.mediaId || "(unknown)"}`);
+      setLog((l) => l + `\nUploaded cover image mediaId: ${r?.mediaId || "(unknown)"}`);
     } catch (e: any) {
-      setLog((l) => l + `
-Cover upload error: ${e?.message || e}`);
+      setLog((l) => l + `\nCover upload error: ${e?.message || e}`);
     }
   }, []);
 
@@ -106,11 +100,9 @@ Cover upload error: ${e?.message || e}`);
   const onFile = useCallback(
     async (f: File) => {
       try {
-        setLog((l) => l + `
-Uploading ${f.name} …`);
+        setLog((l) => l + `\nUploading ${f.name} …`);
         const { transcoded }: { transcoded: TranscodeInfo & { transcodedInfo?: any } } = await uploadToYoto(f);
-        setLog((l) => l + `
-Transcoded: ${transcoded.transcodedSha256}`);
+        setLog((l) => l + `\nTranscoded: ${transcoded.transcodedSha256}`);
 
         const info = (transcoded as any).transcodedInfo || {};
         const title = info?.metadata?.title || f.name.replace(/\.[^.]+$/, "");
@@ -129,7 +121,7 @@ Transcoded: ${transcoded.transcodedSha256}`);
                 trackUrl: `yoto:#${transcoded.transcodedSha256}`,
                 duration: info?.duration ?? 1,
                 fileSize: info?.fileSize ?? 1,
-                format: info?.format || "mp3",
+                format: info?.format || "aac",
                 type: "audio",
                 overlayLabel: "1",
                 ...(channels ? { channels } : {}),
@@ -141,7 +133,11 @@ Transcoded: ${transcoded.transcodedSha256}`);
 
         const body = {
           title,
-          content: { chapters },
+          content: {
+            chapters,
+            config: { resumeTimeout: 2592000 },
+            playbackType: "linear",
+          },
           metadata: { media: { duration: info?.duration, fileSize: info?.fileSize } },
         };
 
@@ -155,12 +151,10 @@ Transcoded: ${transcoded.transcodedSha256}`);
         const created = JSON.parse(txt);
 
         setLog(
-          (l) => l + `
-Created playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`
+          (l) => l + `\nCreated playlist cardId: ${created?.card?.cardId || created?.cardId || "(see response)"}`
         );
       } catch (e: any) {
-        setLog((l) => l + `
-Upload error: ${e?.message || e}`);
+        setLog((l) => l + `\nUpload error: ${e?.message || e}`);
       }
     },
     [selectedIconMediaId]
@@ -181,21 +175,42 @@ Upload error: ${e?.message || e}`);
       }));
       setMyCards(list);
     } catch (e: any) {
-      setLog((l) => l + `
-Load my content error: ${e?.message || e}`);
+      setLog((l) => l + `\nLoad my content error: ${e?.message || e}`);
     }
   }, []);
 
   const createPlaylistFromFiles = useCallback(async () => {
     try {
       if (selectedFiles.length === 0) return;
-      setLog((l) => l + `
-Batch uploading ${selectedFiles.length} files…`);
+      setLog((l) => l + `\nBatch uploading ${selectedFiles.length} files…`);
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
       const tracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
       const title = playlistTitle || `Playlist ${new Date().toLocaleString()}`;
-      const body = { title, content: { chapters: [{ key: "01", title, tracks }] } };
+      const chapterIcon = selectedIconMediaId ? { icon16x16: `yoto:#${selectedIconMediaId}` } : undefined;
+
+      const body = {
+        title,
+        content: {
+          chapters: [
+            {
+              key: "01",
+              title,
+              display: chapterIcon, // required by docs
+              tracks,
+            },
+          ],
+          config: { resumeTimeout: 2592000 },
+          playbackType: "linear",
+        },
+        metadata: {
+          media: {
+            duration: tracks.reduce((s: number, t: any) => s + (t.duration || 0), 0),
+            fileSize: tracks.reduce((s: number, t: any) => s + (t.fileSize || 0), 0),
+          },
+        },
+      };
+
       const resp = await fetch("/api/yoto/create-playlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -204,24 +219,21 @@ Batch uploading ${selectedFiles.length} files…`);
       const txt = await resp.text();
       if (!resp.ok) throw new Error(txt);
       const j = JSON.parse(txt);
-      setLog((l) => l + `
-Created playlist cardId: ${j?.card?.cardId || j?.cardId || "(see response)"}`);
+      setLog((l) => l + `\nCreated playlist cardId: ${j?.card?.cardId || j?.cardId || "(see response)"}`);
     } catch (e: any) {
-      setLog((l) => l + `
-Batch create error: ${e?.message || e}`);
+      setLog((l) => l + `\nBatch create error: ${e?.message || e}`);
     }
   }, [selectedFiles, selectedIconMediaId, playlistTitle]);
 
   const appendFilesToCard = useCallback(async () => {
     try {
       if (!cardId || selectedFiles.length === 0) return;
-      setLog((l) => l + `
-Appending ${selectedFiles.length} files to ${cardId} …`);
+      setLog((l) => l + `\nAppending ${selectedFiles.length} files to ${cardId} …`);
       setUploadPct("");
       const res = await uploadManySequential(selectedFiles, (i, total) => setUploadPct(`${i}/${total}`));
       const newTracks = buildTracksFrom(res as any, selectedIconMediaId || undefined);
       const existing = await fetch(`/api/yoto/get-content?cardId=${encodeURIComponent(cardId)}`).then((r) => r.json());
-      const content = mergeTracksIntoContent(existing, newTracks);
+      const content = mergeTracksIntoContent(existing, newTracks, selectedIconMediaId || undefined);
       const title = existing?.card?.title || existing?.title || playlistTitle || "";
       const body = { cardId, title, content };
       const resp = await fetch("/api/yoto/create-playlist", {
@@ -233,12 +245,10 @@ Appending ${selectedFiles.length} files to ${cardId} …`);
       if (!resp.ok) throw new Error(txt);
       const j = JSON.parse(txt);
       setLog(
-        (l) => l + `
-Updated playlist ${cardId}. Tracks now: ${content.chapters?.[0]?.tracks?.length ?? "?"}`
+        (l) => l + `\nUpdated playlist ${cardId}. Tracks now: ${content.chapters?.[0]?.tracks?.length ?? "?"}`
       );
     } catch (e: any) {
-      setLog((l) => l + `
-Append error: ${e?.message || e}`);
+      setLog((l) => l + `\nAppend error: ${e?.message || e}`);
     }
   }, [cardId, selectedFiles, selectedIconMediaId, playlistTitle]);
 
@@ -262,7 +272,7 @@ Append error: ${e?.message || e}`);
   return (
     <main className={styles.main}>
       <div className={styles.center}>
-        <h1>Yoto uploader</h1>
+        <h1>Yoto Tools (beta)</h1>
         <p>Authenticate, upload tracks, create playlists, set covers & icons</p>
       </div>
 
