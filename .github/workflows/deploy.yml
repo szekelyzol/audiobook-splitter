@@ -1,26 +1,20 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (main)
 
 on:
-  # Trigger on push to main branch
   push:
     branches: [ main ]
-  
-  # Allow manual trigger from Actions tab
   workflow_dispatch:
 
-# Sets permissions for GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
@@ -36,8 +30,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Next.js
-        run: npm run export
+      - name: Build and Export (static)
+        env:
+          GITHUB_PAGES: true
+          NODE_ENV: production
+        run: |
+          npm run build --if-present
+          npx next export
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -47,7 +46,6 @@ jobs:
         with:
           path: ./out
 
-  # Deploy job
   deploy:
     environment:
       name: github-pages

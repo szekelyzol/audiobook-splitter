@@ -1,18 +1,20 @@
 /** @type {import('next').NextConfig} */
 
+const isGhPages = Boolean(process.env.GITHUB_PAGES);
+const repoName = 'audiobook-splitter'; // <-- adjust if you rename the repo
+
 const nextConfig = {
-    reactStrictMode: true,
-}
+  reactStrictMode: true,
+  // Only turn on static export + base/asset prefixes for GitHub Pages builds
+  ...(isGhPages
+    ? {
+        output: 'export',
+        trailingSlash: true,
+        images: { unoptimized: true },
+        basePath: `/${repoName}`,
+        assetPrefix: `/${repoName}/`,
+      }
+    : {}),
+};
 
-module.exports = nextConfig
-
-// module.exports = {
-//   trailingSlash: true,
-//   images: {
-//     unoptimized: true
-//   },
-//   output: 'export',
-//   // Replace 'your-repo-name' with your actual repository name
-//   basePath: process.env.NODE_ENV === 'production' ? '/audiobook-splitter' : '',
-//   assetPrefix: process.env.NODE_ENV === 'production' ? '/audiobook-splitter/' : '',
-// };
+module.exports = nextConfig;
