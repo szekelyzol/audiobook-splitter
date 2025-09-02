@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
 import { useTimestampParser } from '../hooks/useTimestampParser';
 import { useCommandGenerator } from '../hooks/useCommandGenerator';
@@ -17,6 +17,7 @@ export default function Home() {
   const [titleInput, setTitleInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
+  const [notice, setNotice] = useState<string>('');
 
   // Debounce URL input to avoid excessive validation
   const debouncedUrl = useDebounce(sourceUrl, 300);
@@ -42,9 +43,14 @@ export default function Home() {
   );
 
   const hasTimestamps = useMemo(() => 
-    timestampInput.trim().length > 0, 
-    [timestampInput]
+    timestampInput.trim().length > 0 && parsedChapters.length > 0, 
+    [timestampInput, parsedChapters.length]
   );
+
+  // Reset notice if inputs change meaningfully
+  useEffect(() => {
+    setNotice('');
+  }, [sourceUrl, timestampInput]);
 
   // Event handlers
   const toggleSection = (key: AccordionSection) => {
@@ -52,9 +58,21 @@ export default function Home() {
   };
 
   const handleGenerateCommands = () => {
-    if (!normalizedUrl || !isValidUrl) return;
-    
-    const commands = createCommands(normalizedUrl, parsedChapters, titleInput.trim());
+    // Allow empty URL: if a URL is provided but invalid, do nothing; if empty, proceed in split-only mode
+    const urlProvided = normalizedUrl.length > 0;
+    if (urlProvided && !isValidUrl) return;
+
+    // When URL missing but timestamps valid, show custom notice
+    if (!urlProvided && hasTimestamps) {
+      setNotice("No URL detected, I am assuming that you only want to split audio files.");
+    }
+
+    // Pass empty string/undefined to signal split-only mode to the generator
+    const commands = createCommands(
+      urlProvided ? normalizedUrl : '',  // empty string when no URL
+      parsedChapters,
+      titleInput.trim()
+    );
     setGeneratedCommands(commands);
   };
 
@@ -71,7 +89,11 @@ export default function Home() {
 
   const handleReset = () => {
     setGeneratedCommands([]);
+    setNotice('');
   };
+
+  // Button should be enabled when timestamps are valid, and either URL is empty OR it's valid
+  const canGenerate = hasTimestamps && (!sourceUrl || isValidUrl);
 
   return (
     <div className={styles.container}>
@@ -105,11 +127,19 @@ export default function Home() {
 
         <button
           onClick={handleGenerateCommands}
-          disabled={!sourceUrl || !isValidUrl}
+          disabled={!canGenerate}
           className={styles.generateButton}
+          aria-disabled={!canGenerate}
         >
           generate
         </button>
+
+        {/* Custom empty-URL notice */}
+        {notice && (
+          <div className={styles.introBox} role="status" aria-live="polite" style={{ marginTop: 10 }}>
+            {notice}
+          </div>
+        )}
 
         <StatusMessages 
           sourceUrl={sourceUrl}

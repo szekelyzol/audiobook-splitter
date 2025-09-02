@@ -65,7 +65,7 @@ Your MP3 track(s) will be available in the folder where you run the generated co
 - **Without custom title**:
   - a full audio file called `full_audio.mp3`
   - an output folder for the split MP3 files called: `output_20250118T143022`
-  - he split MP3 files, titled according to the timestamp input: `01_Chapter1.mp3`, `02_Chapter2.mp3`, etc.
+  - the split MP3 files, titled according to the timestamp input: `01_Chapter1.mp3`, `02_Chapter2.mp3`, etc.
 
 ### Supported timestamp formats
 
