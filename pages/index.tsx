@@ -27,9 +27,12 @@ export default function Home() {
   const normalizedUrl = useMemo(() => (sourceUrl ? normalizeYouTubeUrl(sourceUrl) : ''), [sourceUrl]);
 
   const parsedChapters = useMemo(() => parseTimestamps(timestampInput), [timestampInput, parseTimestamps]);
+
+  // Distinguish between user-provided input and actually parsed chapters
+  const timestampProvided = useMemo(() => timestampInput.trim().length > 0, [timestampInput]);
   const hasTimestamps = useMemo(
-    () => timestampInput.trim().length > 0 && parsedChapters.length > 0,
-    [timestampInput, parsedChapters.length]
+    () => timestampProvided && parsedChapters.length > 0,
+    [timestampProvided, parsedChapters.length]
   );
 
   useEffect(() => { setNotice(''); }, [sourceUrl, timestampInput]);
@@ -55,7 +58,8 @@ export default function Home() {
 
   const handleReset = () => { setGeneratedCommands([]); setNotice(''); };
 
-  const canGenerate = hasTimestamps && (!sourceUrl || isValidUrl);
+  // Enable when: (a) URL is valid (download-only or download+split), or (b) no URL and we have valid timestamps (split-only)
+  const canGenerate = sourceUrl ? isValidUrl : hasTimestamps;
 
   return (
     <div className={styles.container}>
@@ -98,6 +102,7 @@ export default function Home() {
           chaptersCount={parsedChapters.length}
           showValidation={debouncedUrl === sourceUrl || sourceUrl === ''}
           allowEmptyUrl={hasTimestamps}
+          timestampProvided={timestampProvided}
         />
 
         {generatedCommands.length > 0 && (

@@ -5,10 +5,11 @@ type Props = {
   sourceUrl: string;
   debouncedUrl: string;
   isValidUrl: boolean;
-  hasTimestamps: boolean;
+  hasTimestamps: boolean; // true only when chapters were parsed successfully
   chaptersCount: number;
   showValidation: boolean;
-  allowEmptyUrl?: boolean; // new
+  allowEmptyUrl?: boolean; // when true, we don't error on missing URL (split-only mode)
+  timestampProvided?: boolean; // distinguishes empty input from invalid timestamps
 };
 
 export const StatusMessages: React.FC<Props> = ({
@@ -19,6 +20,7 @@ export const StatusMessages: React.FC<Props> = ({
   chaptersCount,
   showValidation,
   allowEmptyUrl = false,
+  timestampProvided = false,
 }) => {
   if (!showValidation) return <div className={styles.messageContainer} />;
 
@@ -34,14 +36,14 @@ export const StatusMessages: React.FC<Props> = ({
         <p className={styles.errorMessage}>⚠ missing youtube url</p>
       )}
 
-      {/* no valid timestamps */}
-      {sourceUrl && isValidUrl && hasTimestamps === false && debouncedUrl && (
-        <p className={styles.errorMessage}>⚠ no valid timestamps found</p>
+      {/* download-only info (URL ok, no timestamps provided at all) */}
+      {sourceUrl && isValidUrl && !timestampProvided && (
+        <p className={styles.infoMessage}>ℹ no timestamps provided - will download as single mp3 file</p>
       )}
 
-      {/* info when downloading single file */}
-      {sourceUrl && isValidUrl && !hasTimestamps && !debouncedUrl && (
-        <p className={styles.infoMessage}>ℹ no timestamps provided - will download as single mp3 file</p>
+      {/* invalid timestamps (text present but nothing parsed) */}
+      {sourceUrl && isValidUrl && timestampProvided && !hasTimestamps && (
+        <p className={styles.errorMessage}>⚠ no valid timestamps found</p>
       )}
 
       {/* success */}
