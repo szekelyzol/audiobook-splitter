@@ -11,13 +11,16 @@ import { CommandOutput } from '../components/CommandOutput';
 import { Sidebar } from '../components/Sidebar';
 import type { AccordionSection } from '../types/ui';
 
+// Status type for a single message rendered by StatusMessages
+type Status = { type: 'info' | 'error' | 'notice'; text: string } | null;
+
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
-  const [notice, setNotice] = useState<string>('');
+  const [status, setStatus] = useState<Status>(null);
 
   const debouncedUrl = useDebounce(sourceUrl, 300);
   const { parseTimestamps } = useTimestampParser();
@@ -28,24 +31,46 @@ export default function Home() {
 
   const parsedChapters = useMemo(() => parseTimestamps(timestampInput), [timestampInput, parseTimestamps]);
 
-  // Distinguish between user-provided input and actually parsed chapters
+  // Distinguish between "user typed something" and "we parsed chapters"
   const timestampProvided = useMemo(() => timestampInput.trim().length > 0, [timestampInput]);
-  const hasTimestamps = useMemo(
-    () => timestampProvided && parsedChapters.length > 0,
-    [timestampProvided, parsedChapters.length]
-  );
+  const hasTimestamps = useMemo(() => timestampProvided && parsedChapters.length > 0, [timestampProvided, parsedChapters.length]);
 
-  useEffect(() => { setNotice(''); }, [sourceUrl, timestampInput]);
+  // Centralize ALL status messages via useEffect
+  useEffect(() => {
+    // Priority order of messages:
+    // 1) Invalid URL
+    if (sourceUrl && !isValidUrl) {
+      setStatus({ type: 'error', text: '⚠ invalid youtube url format' });
+      return;
+    }
+
+    // 2) Split-only info (no URL + valid timestamps)
+    if (!sourceUrl && hasTimestamps) {
+      setStatus({ type: 'notice', text: "no URL detected, I'm assuming that you only want to split audio files." });
+      return;
+    }
+
+    // 3) Download-only info (URL ok + no timestamps provided at all)
+    if (sourceUrl && isValidUrl && !timestampProvided) {
+      setStatus({ type: 'info', text: 'ℹ no timestamps provided - will download as single mp3 file' });
+      return;
+    }
+
+    // 4) Invalid timestamps (text present but nothing parsed)
+    if (sourceUrl && isValidUrl && timestampProvided && !hasTimestamps) {
+      setStatus({ type: 'error', text: '⚠ no valid timestamps found' });
+      return;
+    }
+
+    // 5) Otherwise, no status message (no separate "success" state by request)
+    setStatus(null);
+  }, [sourceUrl, isValidUrl, timestampProvided, hasTimestamps]);
 
   const toggleSection = (key: AccordionSection) => setOpenSection(prev => (prev === key ? null : key));
 
   const handleGenerateCommands = () => {
     const urlProvided = normalizedUrl.length > 0;
     if (urlProvided && !isValidUrl) return;
-
-    if (!urlProvided && hasTimestamps) {
-      setNotice("no URL detected, I'm assuming that you only want to split audio files.");
-    }
 
     const commands = createCommands(urlProvided ? normalizedUrl : '', parsedChapters, titleInput.trim());
     setGeneratedCommands(commands);
@@ -56,7 +81,7 @@ export default function Home() {
     catch (error) { console.error('Failed to copy:', error); alert('Copy failed. Please copy manually.'); }
   };
 
-  const handleReset = () => { setGeneratedCommands([]); setNotice(''); };
+  const handleReset = () => { setGeneratedCommands([]); };
 
   // Enable when: (a) URL is valid (download-only or download+split), or (b) no URL and we have valid timestamps (split-only)
   const canGenerate = sourceUrl ? isValidUrl : hasTimestamps;
@@ -88,22 +113,8 @@ export default function Home() {
           generate
         </button>
 
-        {notice && (
-          <div className={styles.introBox} role="status" aria-live="polite" style={{ marginTop: 10 }}>
-            {notice}
-          </div>
-        )}
-
-        <StatusMessages
-          sourceUrl={sourceUrl}
-          debouncedUrl={debouncedUrl}
-          isValidUrl={isValidUrl}
-          hasTimestamps={hasTimestamps}
-          chaptersCount={parsedChapters.length}
-          showValidation={debouncedUrl === sourceUrl || sourceUrl === ''}
-          allowEmptyUrl={hasTimestamps}
-          timestampProvided={timestampProvided}
-        />
+        {/* Single source of truth for status messaging */}
+        <StatusMessages message={status} />
 
         {generatedCommands.length > 0 && (
           <CommandOutput commands={generatedCommands} onCopy={handleCopyCommands} onReset={handleReset} />
