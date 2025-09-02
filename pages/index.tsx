@@ -6,13 +6,10 @@ import { useDebounce } from '../hooks/useDebounce';
 import { isValidYouTubeUrl, normalizeYouTubeUrl } from '../utils/youtube';
 import { UrlInput } from '../components/UrlInput';
 import { TimestampInput } from '../components/TimestampInput';
-import { StatusMessages } from '../components/StatusMessages';
+import { StatusMessages, Status } from '../components/StatusMessages';
 import { CommandOutput } from '../components/CommandOutput';
 import { Sidebar } from '../components/Sidebar';
 import type { AccordionSection } from '../types/ui';
-
-// Status type for a single message rendered by StatusMessages
-type Status = { type: 'info' | 'error' | 'notice'; text: string } | null;
 
 export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
@@ -22,50 +19,59 @@ export default function Home() {
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
   const [status, setStatus] = useState<Status>(null);
 
+  // Debounce URL input to avoid excessive validation
   const debouncedUrl = useDebounce(sourceUrl, 300);
+  
+  // Hooks
   const { parseTimestamps } = useTimestampParser();
   const { generateCommands: createCommands } = useCommandGenerator();
 
+  // URL
   const isValidUrl = useMemo(() => (debouncedUrl ? isValidYouTubeUrl(debouncedUrl) : false), [debouncedUrl]);
   const normalizedUrl = useMemo(() => (sourceUrl ? normalizeYouTubeUrl(sourceUrl) : ''), [sourceUrl]);
 
+  // Timestamps
   const parsedChapters = useMemo(() => parseTimestamps(timestampInput), [timestampInput, parseTimestamps]);
-
-  // Distinguish between "user typed something" and "we parsed chapters"
   const timestampProvided = useMemo(() => timestampInput.trim().length > 0, [timestampInput]);
   const hasTimestamps = useMemo(() => timestampProvided && parsedChapters.length > 0, [timestampProvided, parsedChapters.length]);
 
-  // Centralize ALL status messages via useEffect
+  // Centralized status messages
   useEffect(() => {
-    // Priority order of messages:
-    // 1) Invalid URL
+    // 1) invalid URL
     if (sourceUrl && !isValidUrl) {
       setStatus({ type: 'error', text: '⚠ invalid youtube url format' });
       return;
     }
 
-    // 2) Split-only info (no URL + valid timestamps)
+    // 2) split-only notice (no URL + valid timestamps)
     if (!sourceUrl && hasTimestamps) {
       setStatus({ type: 'notice', text: "no URL detected, I'm assuming that you only want to split audio files." });
       return;
     }
 
-    // 3) Download-only info (URL ok + no timestamps provided at all)
+    // 3) download-only info (URL ok + no timestamps provided at all)
     if (sourceUrl && isValidUrl && !timestampProvided) {
       setStatus({ type: 'info', text: 'ℹ no timestamps provided - will download as single mp3 file' });
       return;
     }
 
-    // 4) Invalid timestamps (text present but nothing parsed)
+    // 4) invalid timestamps (text present but nothing parsed)
     if (sourceUrl && isValidUrl && timestampProvided && !hasTimestamps) {
       setStatus({ type: 'error', text: '⚠ no valid timestamps found' });
       return;
     }
 
-    // 5) Otherwise, no status message (no separate "success" state by request)
-    setStatus(null);
-  }, [sourceUrl, isValidUrl, timestampProvided, hasTimestamps]);
+    // 5) SUCCESS — only when there is a valid URL and valid timestamps
+    if (sourceUrl && isValidUrl && hasTimestamps && parsedChapters.length > 0) {
+      setStatus({ type: 'success', text: `✓ found ${parsedChapters.length} chapter(s)` });
+      return;
+    }
 
+    // default: no message
+    setStatus(null);
+  }, [sourceUrl, isValidUrl, timestampProvided, hasTimestamps, parsedChapters.length]);
+
+  // UI helpers
   const toggleSection = (key: AccordionSection) => setOpenSection(prev => (prev === key ? null : key));
 
   const handleGenerateCommands = () => {
@@ -113,7 +119,6 @@ export default function Home() {
           generate
         </button>
 
-        {/* Single source of truth for status messaging */}
         <StatusMessages message={status} />
 
         {generatedCommands.length > 0 && (

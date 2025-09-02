@@ -8,8 +8,8 @@ export function useCommandGenerator() {
     // ----------------------
     // Split-only mode (no URL)
     // ----------------------
-    // If no URL is provided, we assume the user already has a local audio file.
-    // We generate only ffmpeg commands to split that file into chapters.
+    // If no URL is provided, assume the user has a local audio file already.
+    // Generate only ffmpeg commands to split that file into chapters.
     if (!url) {
       const inputFile = `${safeTitle}.mp3`;
       const lines: string[] = [];
@@ -19,8 +19,7 @@ export function useCommandGenerator() {
         const out = `${index}_${sanitizeFilename(c.title || `part_${index}`)}.mp3`;
         const to = c.end ? ` -to ${c.end}` : '';
         // -hide_banner: suppress ffmpeg startup banner
-        // -loglevel error: only show errors, not progress/warnings
-        lines.push(`ffmpeg -hide_banner -loglevel error -i "${inputFile}" -ss ${c.start}${to} -c copy "${out}"`);
+        lines.push(`ffmpeg -hide_banner -i "${inputFile}" -ss ${c.start}${to} -c copy "${out}"`);
       });
       return lines;
     }
@@ -30,8 +29,8 @@ export function useCommandGenerator() {
     // ----------------------
     // Download-only mode (no timestamps)
     // ----------------------
-    // If a URL is provided but no valid timestamps were detected,
-    // just download the entire audio file as a single MP3.
+    // If a URL is provided but we couldn't parse any chapters,
+    // download the entire audio file as a single MP3.
     if (chapters.length === 0) {
       cmds.push('# Download full audio as single file');
       cmds.push(`yt-dlp -x --audio-format mp3 -o "${safeTitle}.mp3" "${url}"`);
@@ -41,8 +40,8 @@ export function useCommandGenerator() {
     // ----------------------
     // Download + split mode
     // ----------------------
-    // If both a URL and valid timestamps are present,
-    // first download the audio, then split into chapters.
+    // If both a URL and valid timestamps are present: first download the audio,
+    // then split it into chapters.
     cmds.push('# Step 1: Download audio from source');
     cmds.push(`yt-dlp -x --audio-format mp3 -o "${safeTitle}.%(ext)s" "${url}"`);
     cmds.push('');
@@ -54,8 +53,7 @@ export function useCommandGenerator() {
       const out = `${index}_${sanitizeFilename(c.title || `part_${index}`)}.mp3`;
       const to = c.end ? ` -to ${c.end}` : '';
       // -hide_banner: suppress ffmpeg startup banner
-      // -loglevel error: only show errors, not progress/warnings
-      cmds.push(`ffmpeg -hide_banner -loglevel error -i "${safeTitle}.mp3" -ss ${c.start}${to} -c copy "${out}"`);
+      cmds.push(`ffmpeg -hide_banner -i "${safeTitle}.mp3" -ss ${c.start}${to} -c copy "${out}"`);
     });
 
     return cmds;
