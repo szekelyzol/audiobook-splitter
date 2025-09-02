@@ -10,20 +10,8 @@ type Props = {
 export const StatusMessages: React.FC<Props> = ({ message }) => {
   if (!message) return <div className={styles.messageContainer} />;
 
-  let className = styles.infoMessage;
-  switch (message.type) {
-    case 'error':
-      className = styles.errorMessage;
-      break;
-    case 'success':
-      className = (styles as any).successMessage || (styles as any).successMinimal || styles.infoMessage;
-      break;
-    case 'notice':
-      className = styles.infoMessage;
-      break;
-    default:
-      className = styles.infoMessage;
-  }
+  // Simplify: only two visual styles (error vs info)
+  const className = message.type === 'error' ? styles.errorMessage : styles.infoMessage;
 
   return (
     <div className={styles.messageContainer}>

@@ -51,19 +51,19 @@ export default function Home() {
 
     // 3) download-only info (URL ok + no timestamps provided at all)
     if (sourceUrl && isValidUrl && !timestampProvided) {
-      setStatus({ type: 'info', text: 'ℹ no timestamps provided - will download as single mp3 file' });
+      setStatus({ type: 'info', text: 'no timestamps provided - will download as single mp3 file' });
       return;
     }
 
     // 4) invalid timestamps (text present but nothing parsed)
     if (sourceUrl && isValidUrl && timestampProvided && !hasTimestamps) {
-      setStatus({ type: 'error', text: '⚠ no valid timestamps found' });
+      setStatus({ type: 'error', text: 'no valid timestamps found' });
       return;
     }
 
     // 5) SUCCESS — only when there is a valid URL and valid timestamps
     if (sourceUrl && isValidUrl && hasTimestamps && parsedChapters.length > 0) {
-      setStatus({ type: 'success', text: `✓ found ${parsedChapters.length} chapter(s)` });
+      setStatus({ type: 'success', text: `found ${parsedChapters.length} chapter(s)` });
       return;
     }
 
