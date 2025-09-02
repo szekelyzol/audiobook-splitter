@@ -111,13 +111,17 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
 
             <h3>output scenarios</h3>
             <div className={styles.introBox}>
-              <p><strong>Single file download, no timestamps:</strong></p>
+              <p><strong>Single file download (no timestamps):</strong></p>
               <p>• With custom title: Creates <code>your_custom_title.mp3</code></p>
               <p>• Without custom title: Creates <code>youtube_video_title.mp3</code></p>
               <br />
-              <p><strong>Split into chapters:</strong></p>
+              <p><strong>Download and split into chapters:</strong></p>
               <p>• With custom title: Creates <code>your_custom_title.mp3</code>, folder <code>your_custom_title_timestamp</code>, and tracks like <code>01_Chapter1.mp3</code></p>
               <p>• Without custom title: Creates <code>full_audio.mp3</code>, folder <code>output_&lt;date-timestamp&gt;</code>, and tracks like <code>01_Chapter1.mp3</code></p>
+              <br />
+              <p><strong>Audio splitting only (no URL):</strong></p>
+              <p>• Only generates commands for splitting. Use this if you want to split an audio file you already downloaded.</p>
+              <p>• Creates a folder like <code>output_&lt;date-timestamp&gt;</code>, and tracks like <code>01_Chapter1.mp3</code></p>
             </div>
 
             <h3>timestamp examples</h3>

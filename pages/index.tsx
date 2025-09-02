@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
 import { useTimestampParser } from '../hooks/useTimestampParser';
 import { useCommandGenerator } from '../hooks/useCommandGenerator';
@@ -6,7 +6,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { isValidYouTubeUrl, normalizeYouTubeUrl } from '../utils/youtube';
 import { UrlInput } from '../components/UrlInput';
 import { TimestampInput } from '../components/TimestampInput';
-import { StatusMessages } from '../components/StatusMessages';
+import { StatusMessages, Status } from '../components/StatusMessages';
 import { CommandOutput } from '../components/CommandOutput';
 import { Sidebar } from '../components/Sidebar';
 import type { AccordionSection } from '../types/ui';
@@ -17,61 +17,80 @@ export default function Home() {
   const [titleInput, setTitleInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
+  const [status, setStatus] = useState<Status>(null);
 
   // Debounce URL input to avoid excessive validation
   const debouncedUrl = useDebounce(sourceUrl, 300);
   
-  // Custom hooks for business logic
+  // Hooks
   const { parseTimestamps } = useTimestampParser();
   const { generateCommands: createCommands } = useCommandGenerator();
 
-  // Memoized computations
-  const isValidUrl = useMemo(() => 
-    debouncedUrl ? isValidYouTubeUrl(debouncedUrl) : false, 
-    [debouncedUrl]
-  );
+  // URL
+  const isValidUrl = useMemo(() => (debouncedUrl ? isValidYouTubeUrl(debouncedUrl) : false), [debouncedUrl]);
+  const normalizedUrl = useMemo(() => (sourceUrl ? normalizeYouTubeUrl(sourceUrl) : ''), [sourceUrl]);
 
-  const normalizedUrl = useMemo(() => 
-    sourceUrl ? normalizeYouTubeUrl(sourceUrl) : '', 
-    [sourceUrl]
-  );
+  // Timestamps
+  const parsedChapters = useMemo(() => parseTimestamps(timestampInput), [timestampInput, parseTimestamps]);
+  const timestampProvided = useMemo(() => timestampInput.trim().length > 0, [timestampInput]);
+  const hasTimestamps = useMemo(() => timestampProvided && parsedChapters.length > 0, [timestampProvided, parsedChapters.length]);
 
-  const parsedChapters = useMemo(() => 
-    parseTimestamps(timestampInput), 
-    [timestampInput, parseTimestamps]
-  );
+  // Centralized status messages
+  useEffect(() => {
+    // 1) invalid URL
+    if (sourceUrl && !isValidUrl) {
+      setStatus({ type: 'error', text: '⚠ invalid youtube url format' });
+      return;
+    }
 
-  const hasTimestamps = useMemo(() => 
-    timestampInput.trim().length > 0, 
-    [timestampInput]
-  );
+    // 2) split-only notice (no URL + valid timestamps)
+    if (!sourceUrl && hasTimestamps) {
+      setStatus({ type: 'notice', text: "no URL detected, I'm assuming that you only want to split audio files." });
+      return;
+    }
 
-  // Event handlers
-  const toggleSection = (key: AccordionSection) => {
-    setOpenSection(prev => (prev === key ? null : key));
-  };
+    // 3) download-only info (URL ok + no timestamps provided at all)
+    if (sourceUrl && isValidUrl && !timestampProvided) {
+      setStatus({ type: 'info', text: 'no timestamps provided - will download as single mp3 file' });
+      return;
+    }
+
+    // 4) invalid timestamps (text present but nothing parsed)
+    if (sourceUrl && isValidUrl && timestampProvided && !hasTimestamps) {
+      setStatus({ type: 'error', text: 'no valid timestamps found' });
+      return;
+    }
+
+    // 5) SUCCESS — only when there is a valid URL and valid timestamps
+    if (sourceUrl && isValidUrl && hasTimestamps && parsedChapters.length > 0) {
+      setStatus({ type: 'success', text: `found ${parsedChapters.length} chapter(s)` });
+      return;
+    }
+
+    // default: no message
+    setStatus(null);
+  }, [sourceUrl, isValidUrl, timestampProvided, hasTimestamps, parsedChapters.length]);
+
+  // UI helpers
+  const toggleSection = (key: AccordionSection) => setOpenSection(prev => (prev === key ? null : key));
 
   const handleGenerateCommands = () => {
-    if (!normalizedUrl || !isValidUrl) return;
-    
-    const commands = createCommands(normalizedUrl, parsedChapters, titleInput.trim());
+    const urlProvided = normalizedUrl.length > 0;
+    if (urlProvided && !isValidUrl) return;
+
+    const commands = createCommands(urlProvided ? normalizedUrl : '', parsedChapters, titleInput.trim());
     setGeneratedCommands(commands);
   };
 
   const handleCopyCommands = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedCommands.join('\n'));
-      // In a real app, you'd show a toast notification instead of alert
-      alert('Commands copied to clipboard!');
-    } catch (error) {
-      console.error('Failed to copy:', error);
-      alert('Copy failed. Please copy manually.');
-    }
+    try { await navigator.clipboard.writeText(generatedCommands.join('\n')); alert('Commands copied to clipboard!'); }
+    catch (error) { console.error('Failed to copy:', error); alert('Copy failed. Please copy manually.'); }
   };
 
-  const handleReset = () => {
-    setGeneratedCommands([]);
-  };
+  const handleReset = () => { setGeneratedCommands([]); };
+
+  // Enable when: (a) URL is valid (download-only or download+split), or (b) no URL and we have valid timestamps (split-only)
+  const canGenerate = sourceUrl ? isValidUrl : hasTimestamps;
 
   return (
     <div className={styles.container}>
@@ -84,15 +103,8 @@ export default function Home() {
           <p>It requires minimal setup to work. Check the sidebar for more details!</p>
         </div>
 
-        <UrlInput 
-          value={sourceUrl}
-          onChange={setSourceUrl}
-        />
-
-        <TimestampInput 
-          value={timestampInput}
-          onChange={setTimestampInput}
-        />
+        <UrlInput value={sourceUrl} onChange={setSourceUrl} />
+        <TimestampInput value={timestampInput} onChange={setTimestampInput} />
 
         <input
           type="text"
@@ -103,36 +115,18 @@ export default function Home() {
           aria-label="Custom Title"
         />
 
-        <button
-          onClick={handleGenerateCommands}
-          disabled={!sourceUrl || !isValidUrl}
-          className={styles.generateButton}
-        >
+        <button onClick={handleGenerateCommands} disabled={!canGenerate} className={styles.generateButton} aria-disabled={!canGenerate}>
           generate
         </button>
 
-        <StatusMessages 
-          sourceUrl={sourceUrl}
-          debouncedUrl={debouncedUrl}
-          isValidUrl={isValidUrl}
-          hasTimestamps={hasTimestamps}
-          chaptersCount={parsedChapters.length}
-          showValidation={debouncedUrl === sourceUrl || sourceUrl === ''}
-        />
+        <StatusMessages message={status} />
 
         {generatedCommands.length > 0 && (
-          <CommandOutput 
-            commands={generatedCommands}
-            onCopy={handleCopyCommands}
-            onReset={handleReset}
-          />
+          <CommandOutput commands={generatedCommands} onCopy={handleCopyCommands} onReset={handleReset} />
         )}
       </div>
 
-      <Sidebar 
-        openSection={openSection}
-        onToggleSection={toggleSection}
-      />
+      <Sidebar openSection={openSection} onToggleSection={toggleSection} />
     </div>
   );
 }
