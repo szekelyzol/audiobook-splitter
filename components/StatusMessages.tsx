@@ -1,58 +1,53 @@
-import { memo } from 'react';
+import React from 'react';
 import styles from '../styles/Home.module.css';
 
-interface StatusMessagesProps {
+type Props = {
   sourceUrl: string;
   debouncedUrl: string;
   isValidUrl: boolean;
   hasTimestamps: boolean;
   chaptersCount: number;
   showValidation: boolean;
-}
+  allowEmptyUrl?: boolean; // new
+};
 
-export const StatusMessages = memo<StatusMessagesProps>(({
+export const StatusMessages: React.FC<Props> = ({
   sourceUrl,
   debouncedUrl,
   isValidUrl,
   hasTimestamps,
   chaptersCount,
-  showValidation
+  showValidation,
+  allowEmptyUrl = false,
 }) => {
-  let messageContent = null;
+  if (!showValidation) return <div className={styles.messageContainer} />;
 
-  // Only show validation messages when appropriate
-  if (showValidation) {
-    if (sourceUrl && !isValidUrl) {
-      messageContent = <div className={styles.errorMessage}>⚠ invalid youtube url format</div>;
-    } else if (!sourceUrl && hasTimestamps) {
-      messageContent = <div className={styles.errorMessage}>⚠ missing youtube url</div>;
-    } else if (debouncedUrl && isValidUrl && hasTimestamps && chaptersCount === 0) {
-      messageContent = (
-        <div className={styles.infoMessage}>
-          ✓ youtube url looks good — no valid timestamps found, so this will download as a single mp3 file
-        </div>
-      );
-    } else if (debouncedUrl && isValidUrl && !hasTimestamps) {
-      messageContent = (
-        <div className={styles.infoMessage}>
-          ✓ youtube url looks good, but no timestamps provided — this will download as a single mp3 file
-        </div>
-      );
-    } else if (debouncedUrl && isValidUrl && chaptersCount > 0) {
-      messageContent = (
-        <div className={styles.successMessage}>
-          ✓ found {chaptersCount} chapter(s)
-        </div>
-      );
-    }
-  }
-
-  // Always render the container to reserve space
   return (
     <div className={styles.messageContainer}>
-      {messageContent}
+      {/* invalid url */}
+      {sourceUrl && !isValidUrl && (
+        <p className={styles.errorMessage}>⚠ invalid youtube url format</p>
+      )}
+
+      {/* missing url — suppressed in split-only mode */}
+      {!sourceUrl && hasTimestamps && !allowEmptyUrl && (
+        <p className={styles.errorMessage}>⚠ missing youtube url</p>
+      )}
+
+      {/* no valid timestamps */}
+      {sourceUrl && isValidUrl && hasTimestamps === false && debouncedUrl && (
+        <p className={styles.errorMessage}>⚠ no valid timestamps found</p>
+      )}
+
+      {/* info when downloading single file */}
+      {sourceUrl && isValidUrl && !hasTimestamps && !debouncedUrl && (
+        <p className={styles.infoMessage}>ℹ no timestamps provided - will download as single mp3 file</p>
+      )}
+
+      {/* success */}
+      {(sourceUrl ? isValidUrl : allowEmptyUrl) && hasTimestamps && chaptersCount > 0 && (
+        <p className={styles.successMessage}>✓ found {chaptersCount} chapter(s)</p>
+      )}
     </div>
   );
-});
-
-StatusMessages.displayName = 'StatusMessages';
+};
