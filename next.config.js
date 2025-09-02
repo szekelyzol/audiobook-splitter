@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 
 const isGhPages = Boolean(process.env.GITHUB_PAGES);
-const repoName = 'audiobook-splitter'; // <-- adjust if you rename the repo
+const repoName = 'audiobook-splitter';
 
 const nextConfig = {
   reactStrictMode: true,
-  // Only turn on static export + base/asset prefixes for GitHub Pages builds
+  // Use static export only for GitHub Pages builds
   ...(isGhPages
     ? {
         output: 'export',
