@@ -67,6 +67,15 @@ Your MP3 track(s) will be available in the folder where you run the generated co
   - an output folder for the split MP3 files called: `output_20250118T143022`
   - the split MP3 files, titled according to the timestamp input: `01_Chapter1.mp3`, `02_Chapter2.mp3`, etc.
 
+**Without URL:**
+   - this flow generates commands that help you split a local audio file into multiple tracks based on the timestamps. Use the custom title field to set the source file's filename.
+- **With custom title**: 
+  - an output folder for the split MP3 files called `Your_Custom_Title_<date-time>`
+  - the split MP3 files, titled according to the timestamp input: `01_Chapter1.mp3`, `02_Chapter2.mp3`, etc.
+- **Without custom title**:
+  - an output folder for the split MP3 files called: `output_20250118T143022`
+  - the split MP3 files, titled according to the timestamp input: `01_Chapter1.mp3`, `02_Chapter2.mp3`, etc
+
 ### Supported timestamp formats
 
 **WEBVTT:**
