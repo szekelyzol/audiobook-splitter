@@ -17,7 +17,7 @@
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
-    "next": "^15.4.6",
+    "next": "^15.5.23",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -26,7 +26,7 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "eslint": "^9.33.0",
-    "eslint-config-next": "^15.4.6",
+    "eslint-config-next": "^15.5.23",
     "typescript": "^5.9.2"
   }
 }
