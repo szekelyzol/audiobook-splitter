@@ -11,6 +11,7 @@ I created this as a proof of concept, and to play around with Next.js.
 - Splits audio files into separate tracks using timestamps
 - Supports multiple timestamp formats (WEBVTT, simple timestamps)
 - Creates organized output folders with properly named files
+- Downloads a list of YouTube URLs as a single, sequentially numbered MP3 playlist
 
 ## Important
 
@@ -28,6 +29,7 @@ To use the generated commands, you need these command-line tools installed:
 
 - **[yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Installation)** - Downloads audio from YouTube
 - **[ffmpeg](https://ffmpeg.org/download.html)** - Splits audio into chapters
+- **[deno](https://github.com/denoland/deno/releases)** - Lets yt-dlp solve YouTube's JavaScript challenges; required for downloads to work at all (see [Need help?](#need-help))
 
 ### Installing required packages
 
@@ -35,20 +37,36 @@ To use the generated commands, you need these command-line tools installed:
 ```bash
 winget install -e --id yt-dlp.yt-dlp
 winget install -e --id Gyan.FFmpeg
+winget install -e --id DenoLand.Deno
 ```
 
 **macOS (Homebrew):**
 ```bash
-brew install yt-dlp ffmpeg
+brew install yt-dlp ffmpeg deno
 ```
+
+> **Just installed one of these?** Close and reopen your terminal before running the generated commands. An already-open terminal won't see newly installed tools, and yt-dlp will fail as if deno were never installed.
+
+Keep yt-dlp itself up to date too (`yt-dlp -U`). YouTube regularly changes what it blocks, and an outdated yt-dlp is a common cause of download errors.
 
 ## Using the tool
 
+The tool has two modes, switched via the tabs at the top:
+
+**Single video** (default):
 1. **Enter YouTube URL** - Paste any valid YouTube video URL
-3. **Add timestamps** (optional) - Paste chapter/track timestamps from video description or comments
-2. **Add custom title** (optional) - Provide a custom name for your files
+2. **Add timestamps** (optional) - Paste chapter/track timestamps from video description or comments
+3. **Add custom title** (optional) - Provide a custom name for your files
 4. **Generate commands** - Click the generate button to create command-line instructions
 5. **Run commands** - Copy and run the generated commands locally in your terminal
+
+**Playlist (multiple URLs):**
+1. Switch to the **playlist** tab
+2. Paste one YouTube URL per line. Bullet or number markers (`-`, `*`, `1.`, `•`, etc.) are stripped automatically
+3. **Generate commands** - creates a single command that downloads every URL as its own MP3, numbered in the order you entered them (`01 - Video Title.mp3`, `02 - Video Title.mp3`, ...)
+4. **Run commands** - Copy and run the generated commands locally in your terminal
+
+This mode doesn't support chapter splitting. Each URL becomes one MP3.
 
 ### Output
 
@@ -103,17 +121,19 @@ Conclusion 09:21
 
 ### Example generated commands
 
+All generated `yt-dlp` commands include `--extractor-args "youtube:player_client=mweb"`. YouTube periodically blocks whichever internal client yt-dlp defaults to, and this flag works around the current block. See [Need help?](#need-help) if downloads fail anyway.
+
 **No timestamps:**
 
 *With custom title "My Audiobook":*
 ```bash
-yt-dlp -x --audio-format mp3 -o "My_Audiobook.%(ext)s" "https://youtube.com/watch?v=..."
+yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb" -o "My_Audiobook.%(ext)s" "https://youtube.com/watch?v=..."
 ```
 *Result: `My_Audiobook.mp3`*
 
 *Without custom title:*
 ```bash
-yt-dlp -x --audio-format mp3 -o "%(title).100s.%(ext)s" "https://youtube.com/watch?v=..."
+yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb" -o "%(title).100s.%(ext)s" "https://youtube.com/watch?v=..."
 ```
 *Result: `YouTube_video_title.mp3`*
 
@@ -122,7 +142,7 @@ yt-dlp -x --audio-format mp3 -o "%(title).100s.%(ext)s" "https://youtube.com/wat
 *With custom title "My Audiobook":*
 ```bash
 # Step 1: Download audio from source
-yt-dlp -x --audio-format mp3 -o "My_Audiobook.%(ext)s" "https://youtube.com/watch?v=..."
+yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb" -o "My_Audiobook.%(ext)s" "https://youtube.com/watch?v=..."
 
 # Step 2: Make output folder
 mkdir "My_Audiobook_20250118T143022"
@@ -135,7 +155,7 @@ ffmpeg -i "My_Audiobook.mp3" -ss 00:04:35 -to 00:09:21 -c copy "My_Audiobook_202
 *Without custom title:*
 ```bash
 # Step 1: Download audio from source
-yt-dlp -x --audio-format mp3 -o "full_audio.%(ext)s" "https://youtube.com/watch?v=..."
+yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb" -o "full_audio.%(ext)s" "https://youtube.com/watch?v=..."
 
 # Step 2: Make output folder
 mkdir "output_20250118T143022"
@@ -144,6 +164,16 @@ mkdir "output_20250118T143022"
 ffmpeg -i "full_audio.mp3" -ss 00:00:00 -to 00:04:35 -c copy "output_20250118T143022/01_Introduction.mp3"
 ffmpeg -i "full_audio.mp3" -ss 00:04:35 -to 00:09:21 -c copy "output_20250118T143022/02_Main_Content.mp3"
 ```
+
+**Playlist mode (multiple URLs):**
+```bash
+# Step 1: Make output folder
+mkdir "playlist_20250118T143022"
+
+# Step 2: Download each URL, numbered in the order they were entered
+yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb" -o "playlist_20250118T143022/%(autonumber)02d - %(title).100s.%(ext)s" --autonumber-start 1 "https://youtube.com/watch?v=..." "https://youtube.com/watch?v=..."
+```
+*Result: `01 - First Video Title.mp3`, `02 - Second Video Title.mp3`, etc.*
 
 ## Running the tool locally
 
@@ -183,6 +213,7 @@ Contributions are welcome, but keep in mind that this project is just a simple p
 **Some common issues:**
 
 - **Invalid URL errors:** Make sure you're using a complete YouTube URL. Shorts are not supported.
+- **`HTTP Error 403: Forbidden` or `No supported JavaScript runtime`:** YouTube periodically blocks whichever internal client yt-dlp defaults to. Generated commands work around the current block with `--extractor-args "youtube:player_client=mweb"`, but this can stop working again as YouTube changes its rules. If it does, try in order: (1) confirm `deno` is installed and your terminal was opened after installing it, (2) update yt-dlp (`yt-dlp -U`), (3) swap `mweb` in the command for another client such as `tv_simply`, `ios`, or `web`.
 - **No output files:** Check that `yt-dlp` successfully downloaded the audio file
 - **ffmpeg errors:** Ensure `ffmpeg` is properly installed and in your `PATH`
 - **Filename issues:** The tool automatically sanitizes custom titles for safe filenames
