@@ -2,29 +2,38 @@ import { useState, useMemo, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
 import { useTimestampParser } from '../hooks/useTimestampParser';
 import { useCommandGenerator } from '../hooks/useCommandGenerator';
+import { useBatchCommandGenerator } from '../hooks/useBatchCommandGenerator';
+import { useUrlListParser } from '../hooks/useUrlListParser';
 import { useDebounce } from '../hooks/useDebounce';
 import { isValidYouTubeUrl, normalizeYouTubeUrl } from '../utils/youtube';
 import { UrlInput } from '../components/UrlInput';
+import { UrlListInput } from '../components/UrlListInput';
 import { TimestampInput } from '../components/TimestampInput';
 import { StatusMessages, Status } from '../components/StatusMessages';
 import { CommandOutput } from '../components/CommandOutput';
 import { Sidebar } from '../components/Sidebar';
 import type { AccordionSection } from '../types/ui';
 
+type Mode = 'single' | 'playlist';
+
 export default function Home() {
+  const [mode, setMode] = useState<Mode>('single');
   const [sourceUrl, setSourceUrl] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
+  const [urlListInput, setUrlListInput] = useState('');
   const [generatedCommands, setGeneratedCommands] = useState<string[]>([]);
   const [openSection, setOpenSection] = useState<AccordionSection>(null);
   const [status, setStatus] = useState<Status>(null);
 
   // Debounce URL input to avoid excessive validation
   const debouncedUrl = useDebounce(sourceUrl, 300);
-  
+
   // Hooks
   const { parseTimestamps } = useTimestampParser();
   const { generateCommands: createCommands } = useCommandGenerator();
+  const { generateBatchCommands } = useBatchCommandGenerator();
+  const { parseUrlList } = useUrlListParser();
 
   // URL
   const isValidUrl = useMemo(() => (debouncedUrl ? isValidYouTubeUrl(debouncedUrl) : false), [debouncedUrl]);
@@ -35,8 +44,19 @@ export default function Home() {
   const timestampProvided = useMemo(() => timestampInput.trim().length > 0, [timestampInput]);
   const hasTimestamps = useMemo(() => timestampProvided && parsedChapters.length > 0, [timestampProvided, parsedChapters.length]);
 
+  // Playlist mode: list of URLs
+  const { validUrls, invalidLines } = useMemo(() => parseUrlList(urlListInput), [urlListInput, parseUrlList]);
+
   // Centralized status messages
   useEffect(() => {
+    if (mode === 'playlist') {
+      if (!urlListInput.trim()) { setStatus(null); return; }
+      if (validUrls.length === 0) { setStatus({ type: 'error', text: '⚠ no valid youtube urls found' }); return; }
+      if (invalidLines.length > 0) { setStatus({ type: 'error', text: `⚠ ${invalidLines.length} invalid url(s) found - ${validUrls.length} valid` }); return; }
+      setStatus({ type: 'success', text: `found ${validUrls.length} url(s)` });
+      return;
+    }
+
     // 1) invalid URL
     if (sourceUrl && !isValidUrl) {
       setStatus({ type: 'error', text: '⚠ invalid youtube url format' });
@@ -69,12 +89,17 @@ export default function Home() {
 
     // default: no message
     setStatus(null);
-  }, [sourceUrl, isValidUrl, timestampProvided, hasTimestamps, parsedChapters.length]);
+  }, [mode, urlListInput, validUrls.length, invalidLines.length, sourceUrl, isValidUrl, timestampProvided, hasTimestamps, parsedChapters.length]);
 
   // UI helpers
   const toggleSection = (key: AccordionSection) => setOpenSection(prev => (prev === key ? null : key));
 
   const handleGenerateCommands = () => {
+    if (mode === 'playlist') {
+      setGeneratedCommands(generateBatchCommands(validUrls));
+      return;
+    }
+
     const urlProvided = normalizedUrl.length > 0;
     if (urlProvided && !isValidUrl) return;
 
@@ -89,8 +114,13 @@ export default function Home() {
 
   const handleReset = () => { setGeneratedCommands([]); };
 
+  const handleModeChange = (next: Mode) => {
+    setMode(next);
+    setGeneratedCommands([]);
+  };
+
   // Enable when: (a) URL is valid (download-only or download+split), or (b) no URL and we have valid timestamps (split-only)
-  const canGenerate = sourceUrl ? isValidUrl : hasTimestamps;
+  const canGenerate = mode === 'playlist' ? validUrls.length > 0 : (sourceUrl ? isValidUrl : hasTimestamps);
 
   return (
     <div className={styles.container}>
@@ -103,17 +133,44 @@ export default function Home() {
           <p>It requires minimal setup to work. Check the sidebar for more details!</p>
         </div>
 
-        <UrlInput value={sourceUrl} onChange={setSourceUrl} />
-        <TimestampInput value={timestampInput} onChange={setTimestampInput} />
+        <div className={styles.modeToggle} role="tablist" aria-label="Mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'single'}
+            onClick={() => handleModeChange('single')}
+            className={mode === 'single' ? styles.modeButtonActive : styles.modeButton}
+          >
+            single video
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'playlist'}
+            onClick={() => handleModeChange('playlist')}
+            className={mode === 'playlist' ? styles.modeButtonActive : styles.modeButton}
+          >
+            playlist (multiple urls)
+          </button>
+        </div>
 
-        <input
-          type="text"
-          value={titleInput}
-          onChange={(e) => setTitleInput(e.target.value)}
-          placeholder="custom title (optional)"
-          className={styles.inputBase}
-          aria-label="Custom Title"
-        />
+        {mode === 'single' ? (
+          <>
+            <UrlInput value={sourceUrl} onChange={setSourceUrl} />
+            <TimestampInput value={timestampInput} onChange={setTimestampInput} />
+
+            <input
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              placeholder="custom title (optional)"
+              className={styles.inputBase}
+              aria-label="Custom Title"
+            />
+          </>
+        ) : (
+          <UrlListInput value={urlListInput} onChange={setUrlListInput} />
+        )}
 
         <button onClick={handleGenerateCommands} disabled={!canGenerate} className={styles.generateButton} aria-disabled={!canGenerate}>
           generate

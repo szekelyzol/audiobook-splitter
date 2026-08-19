@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { sanitizeFilename } from '../utils/filename';
+import { YT_DLP_CLIENT_ARGS } from '../constants/commands';
 import type { Chapter } from '../types/chapter';
 
 export function useCommandGenerator() {
@@ -41,10 +42,10 @@ export function useCommandGenerator() {
     if (url && chapters.length === 0) {
       commands.push('# Download full audio as single file');
       if (useCustomTitle) {
-        commands.push(`yt-dlp -x --audio-format mp3 -o "${sanitizedTitle}.%(ext)s" "${url}"`);
+        commands.push(`yt-dlp -x --audio-format mp3 ${YT_DLP_CLIENT_ARGS} -o "${sanitizedTitle}.%(ext)s" "${url}"`);
       } else {
         // keep original title (truncated to 100 chars) for convenience
-        commands.push(`yt-dlp -x --audio-format mp3 -o "%(title).100s.%(ext)s" "${url}"`);
+        commands.push(`yt-dlp -x --audio-format mp3 ${YT_DLP_CLIENT_ARGS} -o "%(title).100s.%(ext)s" "${url}"`);
       }
       return commands;
     }
@@ -54,7 +55,7 @@ export function useCommandGenerator() {
     commands.push('# Step 1: Download audio from source');
 
     if (useCustomTitle) {
-      commands.push(`yt-dlp -x --audio-format mp3 -o "${sanitizedTitle}.%(ext)s" "${url}"`);
+      commands.push(`yt-dlp -x --audio-format mp3 ${YT_DLP_CLIENT_ARGS} -o "${sanitizedTitle}.%(ext)s" "${url}"`);
       commands.push('');
       commands.push('# Step 2: Make output folder');
       const folder = `${sanitizedTitle}_${timestamp}`;
@@ -72,7 +73,7 @@ export function useCommandGenerator() {
         commands.push(cmd);
       });
     } else {
-      commands.push(`yt-dlp -x --audio-format mp3 -o "full_audio.%(ext)s" "${url}"`);
+      commands.push(`yt-dlp -x --audio-format mp3 ${YT_DLP_CLIENT_ARGS} -o "full_audio.%(ext)s" "${url}"`);
       commands.push('');
       commands.push('# Step 2: Make output folder');
       const folder = `output_${timestamp}`;

@@ -85,6 +85,40 @@
   min-height: 120px;
 }
 
+/* Mode Toggle */
+.modeToggle {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.modeButton,
+.modeButtonActive {
+  flex: 1;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm);
+  text-transform: lowercase;
+  font-family: var(--font-family-base);
+  transition: background-color 0.2s ease;
+}
+
+.modeButton {
+  background: var(--background-color);
+  color: var(--primary-color);
+}
+
+.modeButton:hover {
+  background: var(--info-bg);
+}
+
+.modeButtonActive {
+  background: var(--primary-color);
+  color: var(--background-color);
+}
+
 /* Base Button Styles */
 .generateButton,
 .actionButton {

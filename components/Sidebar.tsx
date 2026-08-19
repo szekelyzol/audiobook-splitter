@@ -48,10 +48,15 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             <h2>requirements</h2>
           </summary>
           <div className={styles.sidebarSection}>
-            <p>You need two command‑line tools:</p>
+            <p>You need three command‑line tools:</p>
             <p><strong>1. yt-dlp</strong> — downloads the audio</p>
             <p><strong>2. ffmpeg</strong> — splits the chapters</p>
-            <p>Both are free and open-source.</p>
+            <p><strong>3. deno</strong> — lets yt-dlp solve youtube&apos;s JavaScript challenges</p>
+            <p>All three are free and open-source.</p>
+            <div className={styles.disclaimer}>
+              <p><strong>Note:</strong> keep yt-dlp updated (<code>yt-dlp -U</code>, or reinstall via your package manager). YouTube regularly changes what it blocks, and an outdated yt-dlp is the most common cause of download errors.</p>
+              <p><strong>Just installed one of these?</strong> Close and reopen your terminal window before running the generated commands. Windows/macOS only add newly installed tools to <em>new</em> terminal sessions - an already-open one won&apos;t see <code>deno</code> yet, and yt-dlp will silently fail JS-challenge solving as if it were never installed.</p>
+            </div>
 
             <h3>Install via package manager</h3>
             <p>If you do not have a package manager yet, install WinGet for Windows, or homebrew for macOS.</p>
@@ -83,6 +88,9 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             </a>
             <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener noreferrer">
               → ffmpeg downloads
+            </a>
+            <a href="https://github.com/denoland/deno/releases" target="_blank" rel="noopener noreferrer">
+              → deno downloads
             </a>
             <div className={styles.disclaimer}>
               <p>finding the right ffmpeg package can be a bit tricky. for windows, download the latest release build directly from here: <a href="https://www.gyan.dev/ffmpeg/builds/#release-builds" target="_blank" rel="noopener noreferrer"><strong>ffmpeg-release-essentials.zip</strong></a></p>
@@ -122,6 +130,11 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
               <p><strong>Audio splitting only (no URL):</strong></p>
               <p>• Only generates commands for splitting. Use this if you want to split an audio file you already downloaded.</p>
               <p>• Creates a folder like <code>output_&lt;date-timestamp&gt;</code>, and tracks like <code>01_Chapter1.mp3</code></p>
+              <br />
+              <p><strong>Playlist mode (multiple urls, no chapters):</strong></p>
+              <p>• Switch to the <em>playlist</em> tab and paste one youtube url per line.</p>
+              <p>• Downloads each video as its own mp3, numbered in the order the urls were entered, into a folder like <code>playlist_&lt;date-timestamp&gt;</code>: <code>01 - Video Title.mp3</code>, <code>02 - Video Title.mp3</code>, etc.</p>
+              <p>• This mode does not split chapters — it just downloads a list of videos as a numbered mp3 playlist.</p>
             </div>
 
             <h3>timestamp examples</h3>
@@ -179,6 +192,14 @@ export const Sidebar = memo<SidebarProps>(({ openSection, onToggleSection }) => 
             <p>• The tool checks if the format of the youtube URL you enter is valid or not, but it does not check if there is actual content behind a youtube URL that is otherwise valid.</p>
             <p>• If you use a truncated youtube URL, <code>yt-dlp</code> will throw an error and <code>ffmpeg</code> will not find any files to split. In this scenario, the process will finish without any output.</p>
             <p>• Youtube shorts are currently not supported.</p>
+
+            <br />
+
+            <p><strong>&quot;HTTP Error 403: Forbidden&quot; or &quot;No supported JavaScript runtime&quot;:</strong></p>
+            <div className={styles.disclaimer}>
+              <p>Youtube periodically blocks whichever internal client yt-dlp defaults to. The generated commands add <code>--extractor-args &quot;youtube:player_client=mweb&quot;</code> to work around the current block, but this can stop working again as youtube changes its blocking rules.</p>
+              <p>If downloads start failing again: 1) make sure <code>deno</code> is installed, 2) update yt-dlp (<code>yt-dlp -U</code>), 3) if it still fails, try swapping <code>mweb</code> in the command for another client such as <code>tv_simply</code>, <code>ios</code>, or <code>web</code>.</p>
+            </div>
 
             <br />
 
